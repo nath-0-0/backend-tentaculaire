@@ -1,0 +1,35 @@
+version: '3'
+services:
+    backend:
+        build: .
+        image: tentaculaire
+        ports:
+            - "8080:8080"
+        networks:
+            nomadesnet:
+                ipv4_address: 172.19.0.2
+        env_file:
+            - .env
+        depends_on:
+            - mongo
+        restart: always
+    mongo:
+        image: mongo:4.0.4
+        volumes:
+            - ~/mongo/data/data/db:/data/db
+        ports:
+            - "27017-27019:27017-27019"
+        networks:
+            nomadesnet:
+                ipv4_address: 172.19.0.3
+
+
+
+networks:
+    nomadesnet:
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.19.0.0/16
+            
+
