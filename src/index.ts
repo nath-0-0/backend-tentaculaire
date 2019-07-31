@@ -7,7 +7,8 @@ import * as hpp from 'hpp';
 import * as cors from 'cors';
 import * as compress from 'compression';
 import * as cookieParser from 'cookie-parser';
-import { authRouter,rootRouter} from './routers';
+import { authRouter, rootRouter, userRouter, itemRouter} from './routers';
+// bimport * from './routers/index';
 import * as dotenv from 'dotenv';
 import { notFoundMiddleware, errorMiddleware } from './middlewares/error';
 
@@ -53,6 +54,8 @@ database
 
   // auth routes
   apiRouter.use('/auth', authRouter);
+  apiRouter.use('/item', itemRouter);
+  apiRouter.use('/user', userRouter);
 
   // other routes
   // apiRouter.use('/user', userRouter);
@@ -65,6 +68,16 @@ database
 
   // RUN EXPRESS SERVER
   const server = app.listen(PORT, HOST);
+
+  // PROCESS EVENTS
+  // gracefully stop the server in case of SIGINT (Ctrl + C) or SIGTERM (Process stopped)
+  const closeServer = () => {
+    console.log('close express server');
+    server.close();
+    // manager database connection
+    console.log('disconnect mongo');
+    return database.disconnect();
+  };
 
   // EXPRESS SERVER ERRORS
   server.on('error', (err: any) => {
@@ -87,15 +100,7 @@ database
     console.log(`Server listening on ${HOST}:${PORT}`);
   });
 
-  // PROCESS EVENTS
-  // gracefully stop the server in case of SIGINT (Ctrl + C) or SIGTERM (Process stopped)
-  const closeServer = () => {
-    console.log('close express server');
-    server.close();
-    // manager database connection
-    console.log('disconnect mongo');
-    return database.disconnect();
-  };
+
 
   process.on('SIGTERM', closeServer);
   process.on('SIGINT', closeServer);

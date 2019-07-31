@@ -5,8 +5,9 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tsc -w & nodemon dist/index.js",
+    "dev": "tsc -w & nodemon dist/index.js",
     "debug": "tsc && node --inspect dist/index.js",
+    "mongo": "docker-compose up mongo",
     "docker": "npm install && tsc && docker-compose build && docker-compose up",
     "deploy": "tsc && docker-compose build backend && heroku container:push web --app tentaculaire && heroku container:release web --app tentaculaire "
   },
@@ -32,6 +33,7 @@
     "@types/jsonwebtoken": "^8.3.2",
     "@types/mongoose": "^5.5.9",
     "nodemon": "^1.19.1",
+    "tslint": "^5.18.0",
     "typescript": "^3.4.1"
   }
 }

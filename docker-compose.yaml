@@ -6,8 +6,8 @@ services:
         ports:
             - "8080:8080"
         networks:
-            nomadesnet:
-                ipv4_address: 172.19.0.2
+            tentanet:
+                ipv4_address: 172.20.1.2
         env_file:
             - .env
         depends_on:
@@ -20,16 +20,16 @@ services:
         ports:
             - "27017-27019:27017-27019"
         networks:
-            nomadesnet:
-                ipv4_address: 172.19.0.3
+            tentanet:
+                ipv4_address: 172.20.1.3
 
 
 
 networks:
-    nomadesnet:
+    tentanet:
         ipam:
             driver: default
             config:
-                - subnet: 172.19.0.0/16
+                - subnet: 172.20.1.0/16
             
 

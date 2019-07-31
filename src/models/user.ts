@@ -2,22 +2,26 @@ import {
   Schema,
   Model,
   Document,
+  Types,
   model as mongooseModel
 } from 'mongoose';
+
+
 
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { urlValidator } from '../validators';
 import { IItem, itemSchema } from './item';
-//coucou
+// import { Request, Response } from 'express';
+// import * as express from 'express';
+// import { lendSchema } from './lend';
+
+// coucou
 
 // Schema property alidators
-
-// Schema property setters
-/*export const setLuckyNumber = (value: number): number => {
-  return Math.floor(Math.abs(value));
-};*/
-
+export const validateAvatar = (avatar: string): boolean => {
+  return avatar.startsWith('http://') || avatar.startsWith('https://');
+};
 
 // main interface
 export interface IUser {
@@ -26,17 +30,19 @@ export interface IUser {
   firstname: string;
   lastname: string;
   avatar: string;
-  pseudo :string;
-  address:string;
-  zip:string;
-  state:string;
-  country:string;
-  
-  homeLocation: {
+  pseudo: string;
+  address: string;
+  zip: string;
+  state: string;
+  country: string;
+  /*homeLocation: {
     lat: Number,
     long: Number
+  };*/
+  homeLocation: {
+    type: string; coordinates: [number]
   };
-  mobileNumber:string;
+  mobileNumber: string;
   favorites: string[];
   items: IItem[];
   lastlogin: number;
@@ -45,32 +51,37 @@ export interface IUser {
     title: string;
     date: Date | number;
     text: string;
-  }[]
+  }[];
   // ajoute t'on dans les propriétés la liste des emrpunts/ prets / objet en emrpunt?
 }
+
 
 // document interface, define custom methods here
 export interface IUserDoc extends Document, IUser {
   comparePassword(password: string): boolean;
   getToken(): string;
-  //modifyPicture();
-  addFavorite(idItem:string);
-  removeFavorite(idItem:string);
-  AddNotification(title:string,date :Date|Number,text :String);
+  // modifyPicture();
+  /*
+  addNotification(title: string, date: Date|Number, text: String);
   getNumberFavorite(); // retourne le nbr d'objets en favoris
-  getNumberBorrow(); // retourne le nbr d'objets enpruntés
-  getNumberLend(); // retourne le nbr d'objets enprumtés
+  getNumberBorrowed(); // retourne le nbr d'objets enpruntés
+  getNumberLent(); // retourne le nbr d'objets enprumtés
   returnUser(); // retourne un profil public
-  getObjectsInBorrow();
-  getObjectsInLend();
+  getObjectsCurrentlyBorrow();
+  getObjectsCurrentlyLend();
   getObjectsBorrowed();
   getObjectsLent();
+  */
+
+  addFavorite(idItem: string, res: Response);
+  removeFavorite(idItem: string);
+  removeItem(item_id: Types.ObjectId);
 
 }
-
-// model interface, define custom static methods here
 interface IUserModel extends Model<IUserDoc> {
   hashPassword(password: string): string;
+  findByCoordinates(coordinates, maxDistance);
+  addItem(user_id: Types.ObjectId, item: IItem);
 }
 
 // schema definition
@@ -83,42 +94,43 @@ const userSchema = new Schema<IUserDoc>({
   password: {
     type: String,
     required: true,
-    minLength: 59,
-    maxLength: 60,
+  //  minLength: 59,
+  //  maxLength: 60,
   },
   firstname: {
     type: String,
-    required: true,
+    required: false,
     minLength: 2,
     maxLength: 100,
   },
   lastname: {
     type: String,
-    required: true,
+    required: false,
     minLength: 2,
     maxLength: 100,
   },
   address: {
     type: String,
-    required: true,
+    required: false,
     minLength: 2,
     maxLength: 150,
   },
   zip: {
     type: String,
-    required: true,
+    required: false,
     minLength: 4,
     maxLength: 4,
   },
   state: {
     type: String,
-    required: true,
+    required: false,
     minLength: 2,
     maxLength: 100,
   },
   country: {
     type: String,
     required: true,
+    default: 'Suisse',
     minLength: 2,
     maxLength: 100,
   },
@@ -130,11 +142,11 @@ const userSchema = new Schema<IUserDoc>({
   },
   pseudo: {
     type: String,
-    required: true,
+    required: false,
     minLength: 2,
     maxLength: 100,
   },
-  
+/*
   homeLocation: {
     type: {
       lat: {
@@ -146,12 +158,22 @@ const userSchema = new Schema<IUserDoc>({
         required: true
       }
     },
-    required: true,
-    default: { lat: 0, long: 0 }
+    */
+   homeLocation: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number],
+      default: [0, 0]
+    },
+    require : false,
   },
-  mobileNumber :{
+  mobileNumber : {
     type: String,
-    require : true,
+    require : false,
     match : '/^(\+41|0041|0){1}(\(0\))?[0-9]{9}$/'
   },
   favorite: {
@@ -171,14 +193,21 @@ const userSchema = new Schema<IUserDoc>({
   },
   notifications: {
     type : {
-      user_id: {type: String,require:false},
-      title: {type: String,require:false,minLength: 2,maxLength: 100},
-      date: {type: Number,require:true,default : Date.now},
-      text: {type: String,require:false,minLength: 5,maxLength: 200},
+      user_id: {type: String, require: false},
+      title: {type: String, require: false, minLength: 2, maxLength: 100},
+      date: {type: Number, require: true, default : Date.now},
+      text: {type: String, require: false, minLength: 5, maxLength: 200},
     },
-  default : [],
+    default : [],
   }
 });
+
+// On crée l'index pour $geoNear
+userSchema.index({ 'homeLocation': '2dsphere' });
+
+
+// model generation
+
 // userSchema.index({ email: 1 }, { unique: true });
 // userSchema.index({ email: 'hashed' });
 
@@ -198,6 +227,7 @@ userSchema.method('comparePassword', function (this: IUserDoc, password: string)
 });
 
 
+
 userSchema.method('getToken', function (this: IUserDoc) {
   return jwt.sign({
       userId: this._id.toString()
@@ -214,13 +244,18 @@ userSchema.method('toJSON', function (this: IUserDoc) {
   return obj;
 });
 
-userSchema.method('addFavorite', function (this: IUserDoc, idItem:string) {
-  
+userSchema.method('addFavorite', function (this: IUserDoc, idItem: string) {
+
   throw new Error('not implemented');
 });
 
-userSchema.method('removeFavorite', function (this: IUserDoc, idItem:string) {
-  
+userSchema.method('removeFavorite', function (this: IUserDoc, idItem: string) {
+
+  throw new Error('not implemented');
+});
+
+userSchema.method('removeItem', function (item_id: Types.ObjectId) {
+
   throw new Error('not implemented');
 });
 // Model custom static methods
@@ -233,7 +268,36 @@ userSchema.static('hashPassword', (password: string): string => {
   return bcrypt.hashSync(password, +process.env.BCRYPT_ROUNDS);
 });
 
+userSchema.static('addItem', (user_id: Types.ObjectId, item: IItem) => {
+  // tslint:disable-next-line: no-use-before-declare
+  return UserModel.findByIdAndUpdate(
+    user_id, // ObjectId(user_id)
+    {  $push: { items: item } },
+    // { $push: [{name: 'tondeuse', description: 'pour petite parcelle', deposit: 20, enabled: true }] }, // update detail
+    { new: true, runValidators: true, strict: true }
+  );
+});
 
-// model generation
+// u serSchema.statics.findByCoordinates = function(coordinates, maxDistance) {
+  userSchema.static('findByCoordinates', (coordinates: [Number], maxDistance: number) => {
+    // throw new Error('not implemented');
+
+    return UserModel.aggregate(
+      [
+        {
+          $geoNear: {
+            near: {
+              type: 'Point',
+              coordinates: coordinates
+            },
+            maxDistance: maxDistance,
+            distanceField: 'dist.calculated',
+            spherical: false
+          }
+        }
+        ]
+      );
+    });
+
 export const UserModel = mongooseModel<IUserDoc, IUserModel>('users', userSchema);
-const toto = new UserModel({});
+

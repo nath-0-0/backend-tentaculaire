@@ -1,0 +1,19 @@
+db.users.insert({email: "nathchab@gmail.com",password: "nath1234",
+firstname: "nathalie",lastname: "chabert",pseudo: "nath009",address: "27 rue des Noirettes",zip:
+ "1227",state: "Carouge",country: "Suisse",mobileNumber: "0763497434")
+
+db.users.update({ _id: ObjectId('5d3fff60dc91fe4729f39fb3')},
+{$set: {homeLocation: {type: "Point",coordinates:[6.18853, 6.133601]}}})
+
+db.users.update({ _id: ObjectId('5d3fff60dc91fe4729f39fb3')},
+{$set: {password: "nath1234",address: "27 rue des Noirettes",zip:"1227",state: "Carouge",country: "Suisse"}})
+
+db.users.update({ _id: ObjectId('5d3fff60dc91fe4729f39fb3')},
+{$set:{item:[{name: "tajine",description: "pour cuire vos tajine",deposit: 0,enabled: true}]}})
+
+db.users.update({ _id: ObjectId('5d3fff60dc91fe4729f39fb3')}, 
+{$set: { item :{push : { each: [ {name: "tondeuse",description: "pour petite parcelle",deposit: 20,enabled: true } ] }  } }} )
+
+
+
+
