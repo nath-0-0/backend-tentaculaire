@@ -1,6 +1,7 @@
 import * as mongoose from 'mongoose';
 import { Mongoose } from 'mongoose';
 import { stringify } from 'querystring';
+mongoose.set('useCreateIndex', true);
 
 export class Database {
     private db: Mongoose = mongoose; // mongoose in a instance opf class mongoose

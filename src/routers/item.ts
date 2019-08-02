@@ -9,32 +9,24 @@ export const itemRouter = express.Router();
 
 // .../search?q=terme&d=1000&lat=12.4354456456&long=24.3821469736
 
-  const searchItemHandler = (req: Request, res: Response) => {
+const searchItemHandler = (req: Request, res: Response) => {
     const search = req.params.q;
     const distance = +req.params.d;
-    const latitude = +req.params.lat;
-    const longitude = +req.params.long;
-    // const stageGeo = {
-    //   $geoNear: {
-    //     spherical: false,
-    //     distanceField: 'dist.calculated',
-    //     limit: 50,
-    //     maxDistance: 100000,
-    //     near: { type: 'Point', coordinates: [46.163296, 6.144295 ] },
-    //   }
+    const lat = +req.params.lat;
+    const long = +req.params.long;
 
-
-    UserModel.findByCoordinates([46.163296, 6.144295], 10000)
-    // .then((users) => UserModel.find(
-    //   {'items.title': search}
-    // ))
+// ([46.163296, 6.144295], 10000)
+    UserModel.findByCoordinates([lat, long], distance)
+    .then((users) => users.find(
+      {'items.name': {'$regex' : search, '$options' : 'i'}}
+    ))
     .then((items) => res.send({items}))
-    .catch (err => res.status(500).send(httpError500(err)));
+    .catch (err => res.status(500).send(httpError500('' + err)));
   };
-itemRouter.get('/search', searchItemHandler);
+itemRouter.get('/search/:q/:d/:lat/:long', searchItemHandler);
 
 
-// liste les items de l'utilisateurs
+// retourne un item
 const getItemByIdHandler = (req: Request, res: Response) => {
   const item_id = Types.ObjectId(req.params.item_id);
   const stages = [{
@@ -57,7 +49,6 @@ const getItemByIdHandler = (req: Request, res: Response) => {
     }
   }];
 
-
   UserModel.aggregate(stages)
            .exec()
            .then((item) => res.send({item}))
@@ -67,27 +58,6 @@ const getItemByIdHandler = (req: Request, res: Response) => {
 };
 itemRouter.get('/:item_id', getItemByIdHandler);
 
-/*
-itemRouter.route('/user/:user_id')
-.get(function(req,res){
-            Piscine.findById(req.params.piscine_id, function(err, piscine) {
-            if (err)
-                res.send(err);
-            res.json(piscine);
-        });
-})
-*/
-
-/*
-db.users.aggregate([{ $project: { _id:0, items:1 } },  { $unwind: { path: '$items', preserveNullAndEmptyArrays: false } }, { $replaceRoot: { newRoot: "$items" } } ,{ $match: { _id: ObjectId('5d4017129571a71fda1bb6e9')  }  } ]).pretty()
-{
-	"enabled" : true,
-	"_id" : ObjectId("5d4017129571a71fda1bb6e9"),
-	"name" : "tondeuse",
-	"description" : "pour petite parcelle",
-	"deposit" : 20
-}
->
-*/
-
-
+const askItemHandler = (req: Request, res: Response) => {
+};
+itemRouter.get('/search/:q/:d/:lat/:long', askItemHandler);

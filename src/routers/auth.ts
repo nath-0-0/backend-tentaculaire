@@ -36,6 +36,7 @@ const signinHandler = (req: Request, res: Response) => {
 };
 authRouter.post('/signin', signinHandler);
 
+
 const signupHandler = (req: Request, res: Response) => {
   // 1. Validate missing user data from req.body
   const { email, password} = req.body;

@@ -85,7 +85,7 @@ interface IUserModel extends Model<IUserDoc> {
 }
 
 // schema definition
-const userSchema = new Schema<IUserDoc>({
+export const userSchema = new Schema<IUserDoc>({
   email: {
     type: String,
     required: true,
@@ -146,19 +146,6 @@ const userSchema = new Schema<IUserDoc>({
     minLength: 2,
     maxLength: 100,
   },
-/*
-  homeLocation: {
-    type: {
-      lat: {
-        type: Number,
-        required: true,
-      },
-      long: {
-        type: Number,
-        required: true
-      }
-    },
-    */
    homeLocation: {
     type: {
       type: String,
@@ -194,9 +181,11 @@ const userSchema = new Schema<IUserDoc>({
   notifications: {
     type : {
       user_id: {type: String, require: false},
-      title: {type: String, require: false, minLength: 2, maxLength: 100},
+      // title: {type: String, require: false, minLength: 2, maxLength: 100},
       date: {type: Number, require: true, default : Date.now},
       text: {type: String, require: false, minLength: 5, maxLength: 200},
+      typeNotif: {type: String, require: false, minLength: 5, maxLength: 100},
+      // contactNotif : {type: String, require: false, minLength: 5, maxLength: 100}
     },
     default : [],
   }
@@ -204,7 +193,8 @@ const userSchema = new Schema<IUserDoc>({
 
 // On crée l'index pour $geoNear
 userSchema.index({ 'homeLocation': '2dsphere' });
-
+// userSchema.index({ 'homeLocation': '2dsphere' });
+userSchema.index({ email: 1 }, { unique: true });
 
 // model generation
 
@@ -218,13 +208,14 @@ userSchema.index({ 'homeLocation': '2dsphere' });
 // allow to do:
 // const movie = new MovieModel({...});
 // movie.setLanguage('Français');
-userSchema.method('comparePassword', function (this: IUserDoc, password: string) {
+/*userSchema.method('comparePassword', function (this: IUserDoc, password: string) {
   try {
     return bcrypt.compareSync(password, this.password);
   }
   catch (e) { }
   return false;
-});
+});*/
+
 
 
 
@@ -273,6 +264,20 @@ userSchema.static('addItem', (user_id: Types.ObjectId, item: IItem) => {
   return UserModel.findByIdAndUpdate(
     user_id, // ObjectId(user_id)
     {  $push: { items: item } },
+    // { $push: [{name: 'tondeuse', description: 'pour petite parcelle', deposit: 20, enabled: true }] }, // update detail
+    { new: true, runValidators: true, strict: true }
+  );
+});
+
+userSchema.static('addNotification ', (borrower_id: Types.ObjectId, lender_id: Types.ObjectId, typeNotif: String, txt: String) => {
+  // tslint:disable-next-line: no-use-before-declare
+  return UserModel.findByIdAndUpdate(
+    lender_id, // ObjectId(user_id)
+    {  $push: { notifications: {
+      user_id : borrower_id,
+      text : txt,
+      typeNotif: typeNotif
+    } } },
     // { $push: [{name: 'tondeuse', description: 'pour petite parcelle', deposit: 20, enabled: true }] }, // update detail
     { new: true, runValidators: true, strict: true }
   );

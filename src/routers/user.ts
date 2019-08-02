@@ -14,7 +14,7 @@ const userHandler = (req: Request, res: Response) => {
 };
 userRouter.get('/', userHandler);
 
-// add a item to a user
+// add a item to a user------------------------------------
 const addItemHandler = (req: Request, res: Response) => {
   const user_id = Types.ObjectId(req.params.user_id);
   const newItem = req.body;
@@ -30,7 +30,7 @@ const addItemHandler = (req: Request, res: Response) => {
 };
 userRouter.post('/:user_id/item', addItemHandler);
 
-// remove a item from a user
+// remove a item from a user------------------------------------
 const removeItemHandler = (req: Request, res: Response) => {
   const user_id = Types.ObjectId(req.params.user_id);
   const item_id = Types.ObjectId(req.params.item_id);
@@ -46,7 +46,7 @@ const removeItemHandler = (req: Request, res: Response) => {
 userRouter.delete('/:user_id/:item_id', removeItemHandler);
 
 
-// liste les items de l'utilisateurs
+// liste les items de l'utilisateurs------------------------------------
 const ItemsHandler = (req: Request, res: Response) => {
   const user_id = Types.ObjectId(req.params.user_id);
   const userToUpdate = req.body;
@@ -60,7 +60,7 @@ const ItemsHandler = (req: Request, res: Response) => {
 userRouter.get('/:user_id/listItem', ItemsHandler);
 
 
-// update a user
+// update a user------------------------------------
 const updateUserHandler = (req: Request, res: Response) => {
   const user_id = Types.ObjectId(req.params.user_id);
   const partialUser = req.body;
@@ -74,16 +74,50 @@ const updateUserHandler = (req: Request, res: Response) => {
 };
 userRouter.put('/:user_id', updateUserHandler);
 
-/*
-.get(function (req, res) {
-  UserModel.findById(req.params.piscine_id, function (err, piscine) {
-    if (err)
-      res.send(err);
-    res.json(piscine);
-  });
-});
+// add a favortie to the user------------------------------------
+const addToFavoriteUserHandler = (req: Request, res: Response) => {
+  const user_id = Types.ObjectId(req.params.user_id);
+  const item_id = Types.ObjectId(req.params.item_id);
+  // validate params values
+  if (!user_id || !item_id) {
+    return res.status(401).send(httpError401('Id is missing'));
+  }
+  console.log(user_id);
+  console.log(item_id);
+  UserModel.findByIdAndUpdate(
+    { _id: user_id },
+    { $push: { favorite: item_id} },
+    { new: true, runValidators: true, strict: true }
+  )
+  .then((favorite) => res.send({favorite}))
+  .catch (err => res.status(500).send(httpError500(err)));
+};
+userRouter.post('/:user_id/:item_id/addToFavorite', addToFavoriteUserHandler);
 
-*/
+// remove a item from a user------------------------------------
+const removeFromFavoriteUserHandler = (req: Request, res: Response) => {
+  const user_id = Types.ObjectId(req.params.user_id);
+  const item_id = Types.ObjectId(req.params.item_id);
+
+  UserModel.findByIdAndUpdate(
+    { _id: user_id },
+    { $pull: { favorite: item_id} },
+    { new: true, runValidators: true, strict: true }
+  )
+  .then((user) => res.send({user}))
+  .catch (err => res.status(500).send(httpError500(err)));
+};
+userRouter.delete('/:user_id/:item_id/removeFromFavorite', removeFromFavoriteUserHandler);
+
+/*
+db.user.findByIdAndUpdate(
+  '5d40ab91168aca30a689c527', // ObjectId(user_id)
+       {  $push: { 'favorite': '5d4017129571a71fda1bb6e9' } },
+     { new: true, runValidators: true, strict: true }
+  
+
+     */
+
 
 
 
