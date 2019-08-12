@@ -11,12 +11,11 @@ import {
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { urlValidator } from '../validators';
-import { IItem, itemSchema } from './item';
+import { IItemModel, IItem, itemSchema } from './item';
 // import { Request, Response } from 'express';
 // import * as express from 'express';
 // import { lendSchema } from './lend';
 
-// coucou
 
 // Schema property alidators
 export const validateAvatar = (avatar: string): boolean => {
@@ -35,10 +34,6 @@ export interface IUser {
   zip: string;
   state: string;
   country: string;
-  /*homeLocation: {
-    lat: Number,
-    long: Number
-  };*/
   homeLocation: {
     type: string; coordinates: [number]
   };
@@ -60,28 +55,18 @@ export interface IUser {
 export interface IUserDoc extends Document, IUser {
   comparePassword(password: string): boolean;
   getToken(): string;
-  // modifyPicture();
-  /*
-  addNotification(title: string, date: Date|Number, text: String);
-  getNumberFavorite(); // retourne le nbr d'objets en favoris
-  getNumberBorrowed(); // retourne le nbr d'objets enpruntés
-  getNumberLent(); // retourne le nbr d'objets enprumtés
-  returnUser(); // retourne un profil public
-  getObjectsCurrentlyBorrow();
-  getObjectsCurrentlyLend();
-  getObjectsBorrowed();
-  getObjectsLent();
-  */
-
   addFavorite(idItem: string, res: Response);
   removeFavorite(idItem: string);
   removeItem(item_id: Types.ObjectId);
 
 }
+// statics
 interface IUserModel extends Model<IUserDoc> {
   hashPassword(password: string): string;
-  findByCoordinates(coordinates, maxDistance);
+  findByCoordinates(coordinates, maxDistance,txt);
   addItem(user_id: Types.ObjectId, item: IItem);
+  addNotification(user_id: Types.ObjectId, notif: Object);
+
 }
 
 // schema definition
@@ -180,12 +165,10 @@ export const userSchema = new Schema<IUserDoc>({
   },
   notifications: {
     type : {
-      user_id: {type: String, require: false},
-      // title: {type: String, require: false, minLength: 2, maxLength: 100},
+      title: {type: String, require: false, minLength: 2, maxLength: 100},
       date: {type: Number, require: true, default : Date.now},
       text: {type: String, require: false, minLength: 5, maxLength: 200},
-      typeNotif: {type: String, require: false, minLength: 5, maxLength: 100},
-      // contactNotif : {type: String, require: false, minLength: 5, maxLength: 100}
+      contactNotif : {type: String, require: false, minLength: 5, maxLength: 100}
     },
     default : [],
   }
@@ -193,31 +176,7 @@ export const userSchema = new Schema<IUserDoc>({
 
 // On crée l'index pour $geoNear
 userSchema.index({ 'homeLocation': '2dsphere' });
-// userSchema.index({ 'homeLocation': '2dsphere' });
 userSchema.index({ email: 1 }, { unique: true });
-
-// model generation
-
-// userSchema.index({ email: 1 }, { unique: true });
-// userSchema.index({ email: 'hashed' });
-
-// Model custom methods
-//
-// this is an instance IMovieDoc
-//
-// allow to do:
-// const movie = new MovieModel({...});
-// movie.setLanguage('Français');
-/*userSchema.method('comparePassword', function (this: IUserDoc, password: string) {
-  try {
-    return bcrypt.compareSync(password, this.password);
-  }
-  catch (e) { }
-  return false;
-});*/
-
-
-
 
 userSchema.method('getToken', function (this: IUserDoc) {
   return jwt.sign({
@@ -263,29 +222,23 @@ userSchema.static('addItem', (user_id: Types.ObjectId, item: IItem) => {
   // tslint:disable-next-line: no-use-before-declare
   return UserModel.findByIdAndUpdate(
     user_id, // ObjectId(user_id)
-    {  $push: { items: item } },
-    // { $push: [{name: 'tondeuse', description: 'pour petite parcelle', deposit: 20, enabled: true }] }, // update detail
+    { $push: { items: item } },
     { new: true, runValidators: true, strict: true }
   );
 });
 
-userSchema.static('addNotification ', (borrower_id: Types.ObjectId, lender_id: Types.ObjectId, typeNotif: String, txt: String) => {
+userSchema.static('addNotification', (user_id: Types.ObjectId, notif: Object) => {
   // tslint:disable-next-line: no-use-before-declare
   return UserModel.findByIdAndUpdate(
-    lender_id, // ObjectId(user_id)
-    {  $push: { notifications: {
-      user_id : borrower_id,
-      text : txt,
-      typeNotif: typeNotif
-    } } },
-    // { $push: [{name: 'tondeuse', description: 'pour petite parcelle', deposit: 20, enabled: true }] }, // update detail
+    user_id, // ObjectId(user_id)
+    { $push: { notifications: notif } },
     { new: true, runValidators: true, strict: true }
   );
 });
 
-// u serSchema.statics.findByCoordinates = function(coordinates, maxDistance) {
-  userSchema.static('findByCoordinates', (coordinates: [Number], maxDistance: number) => {
-    // throw new Error('not implemented');
+
+// userSchema.statics.findByCoordinates = function(coordinates, maxDistance) {
+  userSchema.static('findByCoordinates', (coordinates: [Number], maxDistance: number, txt: String) => {
 
     return UserModel.aggregate(
       [
@@ -299,7 +252,8 @@ userSchema.static('addNotification ', (borrower_id: Types.ObjectId, lender_id: T
             distanceField: 'dist.calculated',
             spherical: false
           }
-        }
+        },
+        {$match : {'items.name': {'$regex' : txt, '$options' : 'i'}}},
         ]
       );
     });

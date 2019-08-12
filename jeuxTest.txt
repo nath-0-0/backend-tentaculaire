@@ -13,7 +13,63 @@ db.users.update({ _id: ObjectId('5d3fff60dc91fe4729f39fb3')},
 
 db.users.update({ _id: ObjectId('5d3fff60dc91fe4729f39fb3')}, 
 {$set: { item :{push : { each: [ {name: "tondeuse",description: "pour petite parcelle",deposit: 20,enabled: true } ] }  } }} )
+ un item:
+{
+    "name": "bouteille",
+    "deposit":30,
+    "description" :"coucou"
+    "enabled": "false"
+}
+
+{
+    "dateFrom": "2014-01-22T14:56:59.301+00:00",
+    "dateTo":"2014-01-24T14:56:59.301+00:00",
+    "message": "tu me le pretes?",
+    "name": "rondeuse"
+}
+
+{
+    "dateFrom": "1565194503",
+    "dateTo":"1565195503",
+    "message": "tu me le pretes?"
+    "name": "rondeuse"
+}
+http://0.0.0.0:8080/api/v1/lend/5d3fff60dc91fe4729f39fb3/5d40ab91168aca30a689c527/5d49af160f14d50dcbc793cd
 
 
+{
+  "lat":
+  "lng":
+  "txt":
+
+}
+
+
+QUESTION :
+
+pourquoi ne pas faire l'export :
+export const ItemModel = mongooseModel<IItemDoc, IItemModel>('items', itemSchema);
+et seulement celui du schéma
+
+// ASK id incoonu > quel erreur champs manquant? mauvais fiormat?
+//return res.status(401).send(httpError403(`wrong Id, item doesn't exist`));
+
+
+// le backend reçoit une date en number? ou en date?
+
+si la validation est faite dans le schéma, pas besoin de le faire sur la route?
+
+
+pour mettre en prod ng build --prod
+
+
+http://0.0.0.0:8080/lend/5d40ab91168aca30a689c527/5d3fff60dc91fe4729f39fb3/5d4017199571a71fda1bb6eb
+
+{
+	"dateFrom":"1565194503",
+    "dateTo"  :"1565197503",
+    "message": "ok????"
+  
+}
 
 

@@ -1,0 +1,1 @@
+export const ValidateDateFromTo = (dateFrom, dateTo) => (dateFrom < dateTo);

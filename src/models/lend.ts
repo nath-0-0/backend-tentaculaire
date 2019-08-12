@@ -15,29 +15,21 @@ import { UserModel } from './user';
 
   // main interface
   export interface ILend {
-   // id_user: string;  // si l'utilisateur desactive son compte, on met ancien user
-   // ask
+   // id_user: string;  // si l'utilisateur desactive son compte, on met ancien user>> je voudrais avoir accès au mail et/numéro tel
+   // ASK
     item: {item_id: Schema.Types.ObjectId, name: string}; // pour l'historique, celui ci peut apparait donc encore si l'objet n'existe plus
-    dateFrom: Date; // ask
-    dateTo: Date;
-    dateAsk: Date;
+    dateFrom: number; // ASK
+    dateTo: number;
+    dateAsk: number;
     isDamaged: boolean;
     isLate: boolean;
     accepted: {ask: boolean, message: string}; //  ask askOk Out refused history (confirmIn) --> 7 jours après History
     returned: boolean;
-    idUserBorrower: { // ask
-      type: Schema.Types.ObjectId,
-      required: false,
-      ref: 'users'
-    };
-    idUserLender: {
-      type: Schema.Types.ObjectId,
-      required: false,
-      ref: 'users'
-    };
-    // UserBorrower: {user_id: string, contact: string};
+    idUserBorrower: Schema.Types.ObjectId;
+    idUserLender: Schema.Types.ObjectId;
+      // UserBorrower: {user_id: string, contact: string};
     // UserLender: {user_id: string, contact: string};
-    message: string;
+    message: string; // message pouvant accompagner la demande de prêt
   }
 
   // document interface, define custom methods here
@@ -55,21 +47,36 @@ import { UserModel } from './user';
   }
 
   // schema definition
+  const FKHelper = require('./../helpers/foreign-key-helper');
+
   export const lendSchema = new Schema<ILendDoc>({
     idUserBorrower: {
       type: Schema.Types.ObjectId,
       required: true,
-       ref: 'users'
+       ref: 'users',
+       validate: {
+        isAsync: true,
+        validator: function(v) {
+          return FKHelper(UserModel.model('users'), v);
+        },
+      }
     },
     idUserLender: {
       type: Schema.Types.ObjectId,
       required: true,
-       ref: 'users'
+       ref: 'users',
+       validate: {
+        isAsync: true,
+        validator: function(v) {
+          return FKHelper(UserModel.model('users'), v);
+        },
+      }
+ 
     },
-    item: { // ask
+    item: { // ASK c'est juste?
       item_id: {  // ITEM
-        type: Schema.Types.ObjectId,
-        required: false,
+        type: Schema.Types.ObjectId,  // TODO add validate for item_id
+        required: false
       },
       name: {  // ITEM
         type: String,
@@ -77,13 +84,13 @@ import { UserModel } from './user';
         }
     },
     dateFrom: {
-      type: Date,
+      type: Number,
       required: false,
     },
     dateTo: {
-      type: Date,
-      required: false, // date to plus grande que date from est-ce qu'on opeut faire un validate à ce point ask
-    },
+      type: Number,
+      required: false, // date to plus grande que date from est-ce qu'on opeut faire un validate à ce point ASK
+    },                // voir avec compare password TODO
     dateAsk: {
       type: Number,
       default: Date.now
@@ -122,6 +129,10 @@ import { UserModel } from './user';
       required: false,
     },
   });
+
+  lendSchema.index({ idUserBorrower: 1 });
+  lendSchema.index({ idUserLender: 1 });
+  //lendSchema.index({ item.item_id: 1 });
 
 
 

@@ -21,7 +21,6 @@ import { urlValidator } from '../validators';
 
   // document interface, define custom methods here
   // export interface IUserDoc extends Document, IUser {
-
   export interface IItemDoc extends Document, IItem {
 
   }
@@ -35,14 +34,14 @@ import { urlValidator } from '../validators';
   export const itemSchema = new Schema<IItemDoc>({
     name: {
       type: String,
-      required: true,
+      required: [true, 'Name is required'],
       minlength: 2,
       maxlength: 50
     },
     description: {
       type: String,
       required: false,
-      minlength: 2,
+      minlength: 0,
       maxlength: 500
     },
     deposit: {
@@ -51,7 +50,7 @@ import { urlValidator } from '../validators';
       min: 0,
       max: 500,
     },
-    enabled: {
+    enabled: {  // false si l'utilisateur le met en pause ou si il est en prêt. TODO >> en prêt
       type: Boolean,
       required: true,
       default: true
@@ -62,4 +61,11 @@ import { urlValidator } from '../validators';
       validate: [urlValidator, 'Image must an uri']
     },
   });
+
+ // itemSchema.index({ _id: 1 }, { unique: true });
+  
+
+
+  export const ItemModel = mongooseModel<IItemDoc, IItemModel>('items', itemSchema);
+
 
