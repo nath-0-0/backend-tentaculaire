@@ -4,39 +4,32 @@ import {
     Document,
     model as mongooseModel
   } from 'mongoose';
-// import { ItemModel } from './conversation';
-import { itemSchema } from './item';
-import { UserModel } from './user';
 
   // utilisaer imgur pour stocker lîmage
-  // fork sur github pour reprendre un projet
-
-
-
+  
   // main interface
   export interface ILend {
    // id_user: string;  // si l'utilisateur desactive son compte, on met ancien user>> je voudrais avoir accès au mail et/numéro tel
-   // ASK
+   // TOASK
     item: {item_id: Schema.Types.ObjectId, name: string}; // pour l'historique, celui ci peut apparait donc encore si l'objet n'existe plus
-    dateFrom: number; // ASK
+    dateFrom: number; // TOASK
     dateTo: number;
     dateAsk: number;
     isDamaged: boolean;
     isLate: boolean;
-    accepted: {ask: boolean, message: string}; //  ask askOk Out refused history (confirmIn) --> 7 jours après History
+    accepted: {ask: boolean, message: string}; 
     returned: boolean;
-    idUserBorrower: Schema.Types.ObjectId;
+    idUserBorrower: Schema.Types.ObjectId; // TOASK peut être ajouter nom/prénom ainsi qu'info de contact
     idUserLender: Schema.Types.ObjectId;
-      // UserBorrower: {user_id: string, contact: string};
+    // UserBorrower: {user_id: string, contact: string};
     // UserLender: {user_id: string, contact: string};
     message: string; // message pouvant accompagner la demande de prêt
   }
 
   // document interface, define custom methods here
-  // export interface IUserDoc extends Document, IUser {
 
   export interface ILendDoc extends Document, ILend {
-    [x: string]: any;
+    [x: string]: any; // TOASK pas compris
     newLend: any;
   }
 
@@ -47,36 +40,23 @@ import { UserModel } from './user';
   }
 
   // schema definition
-  const FKHelper = require('./../helpers/foreign-key-helper');
-
+  
   export const lendSchema = new Schema<ILendDoc>({
     idUserBorrower: {
       type: Schema.Types.ObjectId,
       required: true,
        ref: 'users',
-       validate: {
-        isAsync: true,
-        validator: function(v) {
-          return FKHelper(UserModel.model('users'), v);
-        },
-      }
     },
     idUserLender: {
       type: Schema.Types.ObjectId,
       required: true,
        ref: 'users',
-       validate: {
-        isAsync: true,
-        validator: function(v) {
-          return FKHelper(UserModel.model('users'), v);
-        },
-      }
- 
     },
-    item: { // ASK c'est juste?
+    item: { // TOASK c'est just
       item_id: {  // ITEM
-        type: Schema.Types.ObjectId,  // TODO add validate for item_id
-        required: false
+        type: Schema.Types.ObjectId, 
+        required: false,
+        ref: 'users.items',
       },
       name: {  // ITEM
         type: String,
@@ -89,8 +69,8 @@ import { UserModel } from './user';
     },
     dateTo: {
       type: Number,
-      required: false, // date to plus grande que date from est-ce qu'on opeut faire un validate à ce point ASK
-    },                // voir avec compare password TODO
+      required: false, // date to plus grande que date from est-ce qu'on peut faire un validate à ce point ASK
+    },                // voir avec compare password TODO TOASK
     dateAsk: {
       type: Number,
       default: Date.now
@@ -132,9 +112,7 @@ import { UserModel } from './user';
 
   lendSchema.index({ idUserBorrower: 1 });
   lendSchema.index({ idUserLender: 1 });
-  //lendSchema.index({ item.item_id: 1 });
 
-
-
-  // model generation
+// model generation
+// TOASK pourquoi exporter et des fois non?
   export const LendModel = mongooseModel<ILendDoc, ILendModel>('lends', lendSchema);

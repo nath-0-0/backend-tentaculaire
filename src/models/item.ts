@@ -47,10 +47,10 @@ import { urlValidator } from '../validators';
     deposit: {
       type: Number,
       required: false,
-      min: 0,
-      max: 500,
+      min: [0,'Minimum is 0'],
+      max: [500,'Maximum is 500'],
     },
-    enabled: {  // false si l'utilisateur le met en pause ou si il est en prêt. TODO >> en prêt
+    enabled: {  // false si l'utilisateur le met en pause ou si il est en prêt.
       type: Boolean,
       required: true,
       default: true
@@ -61,9 +61,6 @@ import { urlValidator } from '../validators';
       validate: [urlValidator, 'Image must an uri']
     },
   });
-
- // itemSchema.index({ _id: 1 }, { unique: true });
-  
 
 
   export const ItemModel = mongooseModel<IItemDoc, IItemModel>('items', itemSchema);

@@ -8,7 +8,6 @@ import { SlowBuffer } from 'buffer';
 
 export const itemRouter = express.Router();
 
-// .../search?q=terme&d=1000&lat=12.4354456456&long=24.3821469736
 
 // recherche des items d'après une geolocalisatio, distance et chaine de caractère
 const searchItemHandler = (req: Request, res: Response) => {
@@ -30,7 +29,7 @@ const searchItemHandler = (req: Request, res: Response) => {
     .then((items) => res.send({items}))
     .catch (err => res.status(500).send(httpError500(null, err)));
   };
-itemRouter.get('/search/:q/:d/:lat/:long', searchItemHandler);
+itemRouter.get('/search/:q/:d/:lat/:long', searchItemHandler); // mot / distance/ latitude / longitude
 
 
 // retourne un item ------------------------------------------------------------------------
@@ -68,6 +67,17 @@ const getItemByIdHandler = (req: Request, res: Response) => {
             })
            .catch (err => res.status(500).send(httpError500(null, err)));
 
+  // TOASK
+  //{
+    // "item": [
+    //   {
+    // "enabled": true,
+    // "_id": "5d49af160f14d50dcbc793cd",
+    // "name": "chat",
+    // "deposit": 30
+    // }
+    // ],
+    // }
 
 };
 itemRouter.get('/:item_id', getItemByIdHandler);

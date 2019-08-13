@@ -12,9 +12,6 @@ import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { urlValidator } from '../validators';
 import { IItemModel, IItem, itemSchema } from './item';
-// import { Request, Response } from 'express';
-// import * as express from 'express';
-// import { lendSchema } from './lend';
 
 
 // Schema property alidators
@@ -79,8 +76,8 @@ export const userSchema = new Schema<IUserDoc>({
   password: {
     type: String,
     required: true,
-  //  minLength: 59,
-  //  maxLength: 60,
+    minLength: 59,
+    maxLength: 60,
   },
   firstname: {
     type: String,
@@ -168,7 +165,7 @@ export const userSchema = new Schema<IUserDoc>({
       title: {type: String, require: false, minLength: 2, maxLength: 100},
       date: {type: Number, require: true, default : Date.now},
       text: {type: String, require: false, minLength: 5, maxLength: 200},
-      contactNotif : {type: String, require: false, minLength: 5, maxLength: 100}
+      contactNotif : {type: String, require: false, minLength: 5, maxLength: 500}
     },
     default : [],
   }
@@ -177,6 +174,7 @@ export const userSchema = new Schema<IUserDoc>({
 // On crée l'index pour $geoNear
 userSchema.index({ 'homeLocation': '2dsphere' });
 userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ pseudo: 1 }, { unique: true });
 
 userSchema.method('getToken', function (this: IUserDoc) {
   return jwt.sign({
@@ -195,17 +193,14 @@ userSchema.method('toJSON', function (this: IUserDoc) {
 });
 
 userSchema.method('addFavorite', function (this: IUserDoc, idItem: string) {
-
   throw new Error('not implemented');
 });
 
 userSchema.method('removeFavorite', function (this: IUserDoc, idItem: string) {
-
   throw new Error('not implemented');
 });
 
 userSchema.method('removeItem', function (item_id: Types.ObjectId) {
-
   throw new Error('not implemented');
 });
 // Model custom static methods
@@ -237,7 +232,6 @@ userSchema.static('addNotification', (user_id: Types.ObjectId, notif: Object) =>
 });
 
 
-// userSchema.statics.findByCoordinates = function(coordinates, maxDistance) {
   userSchema.static('findByCoordinates', (coordinates: [Number], maxDistance: number, txt: String) => {
 
     return UserModel.aggregate(

@@ -7,7 +7,7 @@ export const authMiddleware = (req: Request, res: Response, next) => {
   try {
     jwt.verify(token, process.env.JWT_SECRET);
     // token valid & not expired
-    next();
+    next(); // TOASK the next
   }
   catch (e) {
     // token invalid

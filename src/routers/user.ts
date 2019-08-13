@@ -137,7 +137,7 @@ const removeFromFavoriteUserHandler = (req: Request, res: Response) => {
     { $pull: { favorite: item_id} },
     { new: true, runValidators: true, strict: true }
   )
-  .then((user) => res.send({user}))
+  .then((user) => res.send({user}))  
   .catch (err => res.status(500).send(httpError500(null, err)));
 };
 userRouter.delete('/:user_id/:item_id/removeFromFavorite', removeFromFavoriteUserHandler);
