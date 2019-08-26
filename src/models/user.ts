@@ -11,13 +11,10 @@ import {
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { urlValidator } from '../validators';
-import { IItemModel, IItem, itemSchema } from './item';
+import { IItem, itemSchema } from './item';
+//TODO faire sans schema et toutotoutoutout
 
 
-// Schema property alidators
-export const validateAvatar = (avatar: string): boolean => {
-  return avatar.startsWith('http://') || avatar.startsWith('https://');
-};
 
 // main interface
 export interface IUser {
@@ -27,6 +24,7 @@ export interface IUser {
   lastname: string;
   avatar: string;
   pseudo: string;
+  tel: string;
   address: string;
   zip: string;
   state: string;
@@ -36,15 +34,15 @@ export interface IUser {
   };
   mobileNumber: string;
   favorites: string[];
-  items: IItem[];
+  items: IItem[]; // mettre any
   lastlogin: number;
   notifications: {
-    user_id: string,
+    lend_id: string,
     title: string;
     date: Date | number;
     text: string;
+    contactNotif: string;
   }[];
-  // ajoute t'on dans les propriétés la liste des emrpunts/ prets / objet en emrpunt?
 }
 
 
@@ -61,8 +59,8 @@ export interface IUserDoc extends Document, IUser {
 interface IUserModel extends Model<IUserDoc> {
   hashPassword(password: string): string;
   findByCoordinates(coordinates, maxDistance,txt);
-  addItem(user_id: Types.ObjectId, item: IItem);
-  addNotification(user_id: Types.ObjectId, notif: Object);
+  addItem(user_id: Schema.Types.ObjectId, item: IItem);
+  addNotification(user_id: Schema.Types.ObjectId, notif: Object);
 
 }
 
@@ -118,15 +116,21 @@ export const userSchema = new Schema<IUserDoc>({
   },
   avatar: {
     type: String,
-    required: true,
+    required: false,
     default: 'https://www.gravatar.com/avatar/default',
-    validate: [urlValidator, 'Avatar must an uri']
+    //validate: [urlValidator, 'Avatar must an uri']
   },
   pseudo: {
     type: String,
     required: false,
     minLength: 2,
     maxLength: 100,
+  },
+  tel: {
+    type: String,
+    required: false,
+    minLength: 7,
+    maxLength: 20,
   },
    homeLocation: {
     type: {
@@ -146,7 +150,7 @@ export const userSchema = new Schema<IUserDoc>({
     match : '/^(\+41|0041|0){1}(\(0\))?[0-9]{9}$/'
   },
   favorite: {
-    type: [String], // !!! <-- array type definition - String[] wont compile
+    type: [itemSchema], // !!! <-- array type definition - String[] wont compile ASK ASKfonvtionne pas bien
     required: false,
     default: []
   },
@@ -162,6 +166,7 @@ export const userSchema = new Schema<IUserDoc>({
   },
   notifications: {
     type : {
+      lend_id : [String],
       title: {type: String, require: false, minLength: 2, maxLength: 100},
       date: {type: Number, require: true, default : Date.now},
       text: {type: String, require: false, minLength: 5, maxLength: 200},
@@ -176,9 +181,23 @@ userSchema.index({ 'homeLocation': '2dsphere' });
 userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ pseudo: 1 }, { unique: true });
 
+// methode
+
+userSchema.method('comparePassword', function (this: IUserDoc, password: string) {
+  try {
+    return bcrypt.compareSync(password, this.password);
+  }
+  catch (e) { }
+  return false;
+});
+
+
+
+
+
 userSchema.method('getToken', function (this: IUserDoc) {
   return jwt.sign({
-      userId: this._id.toString()
+      user: this.toJSON()
     },
     process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE
@@ -203,17 +222,14 @@ userSchema.method('removeFavorite', function (this: IUserDoc, idItem: string) {
 userSchema.method('removeItem', function (item_id: Types.ObjectId) {
   throw new Error('not implemented');
 });
+
 // Model custom static methods
 //
-// cannot use this here
-//
-// allow to do:
-// MovieModel.staticMethod();
 userSchema.static('hashPassword', (password: string): string => {
   return bcrypt.hashSync(password, +process.env.BCRYPT_ROUNDS);
 });
 
-userSchema.static('addItem', (user_id: Types.ObjectId, item: IItem) => {
+userSchema.static('addItem', (user_id: Schema.Types.ObjectId, item: IItem) => {
   // tslint:disable-next-line: no-use-before-declare
   return UserModel.findByIdAndUpdate(
     user_id, // ObjectId(user_id)
@@ -222,7 +238,7 @@ userSchema.static('addItem', (user_id: Types.ObjectId, item: IItem) => {
   );
 });
 
-userSchema.static('addNotification', (user_id: Types.ObjectId, notif: Object) => {
+userSchema.static('addNotification', (user_id: Schema.Types.ObjectId, notif: Object) => {
   // tslint:disable-next-line: no-use-before-declare
   return UserModel.findByIdAndUpdate(
     user_id, // ObjectId(user_id)
@@ -232,7 +248,7 @@ userSchema.static('addNotification', (user_id: Types.ObjectId, notif: Object) =>
 });
 
 
-  userSchema.static('findByCoordinates', (coordinates: [Number], maxDistance: number, txt: String) => {
+userSchema.static('findByCoordinates', (coordinates: [Number], maxDistance: number, txt: String) => {
 
     return UserModel.aggregate(
       [

@@ -1,6 +1,13 @@
+
 import * as express from 'express';
 import { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth';
+import {
+  Schema,
+  Model,
+  Document,
+  model as mongooseModel
+} from 'mongoose';
 
 
 import {
@@ -25,7 +32,7 @@ lendRouter.get('/', userHandler);
 
 
 // ask for borrow a item  ------------------------------------------------
-const askLendHandler = (req: Request, res: Response) => {
+const askLendHandler = async (req: Request, res: Response) => {
    const borrower_id = req.params.borrower_id;
   // const borrower_id = Types.ObjectId(req.params.borrower_id);
   const lender_id = req.params.lender_id;
@@ -37,43 +44,39 @@ const askLendHandler = (req: Request, res: Response) => {
     res.status(400).send(httpError403('la date de début est plus grande que la date de retour'));
   }
 
-// tester si c'est une date TODO
-
-
-
-const newLend = new LendModel();
+  const newLend = new LendModel();
   // check id
-  UserModel.findOne({ _id : borrower_id}) //
+  await UserModel.findOne({ _id : borrower_id}) //
   .then(user => {
     if (!user) {
       res.status(401).send(httpError401(`Wrong Id, user borrower doesn't exist`));
       return;
     }
-  });
-  UserModel.findOne({ _id : lender_id})
+  }).catch (err => mongoError(err, res));
+  await UserModel.findOne({ _id : lender_id})
   .then(user => {
     if (!user) {
       res.status(401).send(httpError401(`Wrong Id, user lender doesn't exist`));
       return;
     }
-  });
-  UserModel.findOne({ _id: lender_id , 'items._id': item_id })
+  }).catch (err => mongoError(err, res));
+  await UserModel.findOne({ _id: lender_id , 'items._id': item_id })
   .then (useritem => {
     if (!useritem) {
       res.status(401).send(httpError401(`Wrong Id, item doesn't exist`));
       return;
     }
-  });
-// creating new document
-newLend.dateFrom = dateFrom;
-newLend.dateTo = dateTo;
-newLend.message = message;
-newLend.idUserBorrower = borrower_id;
-newLend.idUserLender = lender_id;
-newLend.item =  { item_id: item_id, name: name};
+  }).catch (err => mongoError(err, res));
+  // creating new document
+  newLend.dateFrom = dateFrom;
+  newLend.dateTo = dateTo;
+  newLend.message = message;
+  newLend.idUserBorrower = borrower_id;
+  newLend.idUserLender = lender_id;
+  newLend.item =  { item_id: item_id, name: name};
 
   // save new lend
-  newLend.save()
+  await newLend.save()
        .then(lend => {
        // TOASK est-ce ok?
         const newNotif = new Object(
@@ -84,27 +87,25 @@ newLend.item =  { item_id: item_id, name: name};
             text: 'string',
           }
         );
-        console.log(newNotif);
-        return UserModel.addNotification(lender_id, newNotif); // add Item to user
-        return lend;
+         return UserModel.addNotification(lender_id, newNotif); // add Item to user
         })
     .then((lend) => res.send({lend}))
-    .catch (err => res.status(500).send(httpError500(null, '' + err)));
+    .catch (err => mongoError(err, res));
 };
-lendRouter.post('/:borrower_id/:lender_id/:item_id', askLendHandler); // TODO add validate for item_id
+lendRouter.post('/:borrower_id/:lender_id/:item_id', authMiddleware, askLendHandler); // TODO add validate for item_id
 
 // answer yes or no to lend the item ------------------------------------------------
 // REMARQUE l'objet n'est pas unvailable lorsqu il est en prêt car peut etre dispo à autre date
 // TODO check au moment de la demande et selon les dates VERSION 2
 const answerLendHandler = (req: Request, res: Response, ) => {
-  const lend_id = Types.ObjectId(req.params.lend_id);
+  const lend_id = new Schema.Types.ObjectId(req.params.lend_id);
   const partialLend = req.body; // modification objet accepted.ask /accepted.message
 
 
   const newNotif = new Object(
     {
       lend_id: lend_id,
-      title: partialLend.accepted.ask ? 'Votre demande d emprunt a été acceptée' : 'Votre demande d\'emprunt a étét refusée',
+      title: partialLend.accepted.ask ? 'Votre demande d\' emprunt a été acceptée' : 'Votre demande d\'emprunt a étét refusée',
       date: Date.now,
       text: partialLend.accepted.message
     }
@@ -118,14 +119,14 @@ const answerLendHandler = (req: Request, res: Response, ) => {
   .then((lend) => {
     if (!lend) {
       return res.status(401).send(httpError403(`wrong Id, item lend doesn't exist`));
-    }// TOASK
-    // return UserModel.addNotification(Types.ObjectId(lend.idUserLender), newNotif); // add Item to user
+    }
+     return UserModel.addNotification(lend.idUserLender, newNotif); // add Item to user
   })
   .then((lend) => res.send({lend}))
   .catch (err => res.status(500).send(httpError500(null, err)));
 
 };
-lendRouter.post('/:lend_id/ask', answerLendHandler);
+lendRouter.post('/:lend_id/ask', authMiddleware, answerLendHandler);
 
 
 // make the lend as returned ------------------------------------------------
@@ -154,10 +155,10 @@ const returnLendHandler = (req: Request, res: Response) => {
    // return UserModel.addNotification(lend.idUserLender, newNotif); // add Item to user
   })
   .then((lend) => res.send({lend}))
-  .catch (err => res.status(500).send(httpError500(null, err)));
+  .catch (err => res.status(500).send(httpError500(err, err)));
 
 };
-lendRouter.post('/:lend_id/return', returnLendHandler);
+lendRouter.post('/:lend_id/return', authMiddleware, returnLendHandler);
 
 
 // rate afer return ------------------------------------------------
@@ -179,7 +180,7 @@ const ratingLendHandler = (req: Request, res: Response) => {
   .catch (err => res.status(500).send(httpError500(null, err)));
 
 };
-lendRouter.post('/:lend_id/rating', ratingLendHandler);
+lendRouter.post('/:lend_id/rating', authMiddleware, ratingLendHandler);
 
 // cancel the lend ---------------------------------------------- TODO
 const cancelLendHandler = (req: Request, res: Response) => {
@@ -201,12 +202,12 @@ const cancelLendHandler = (req: Request, res: Response) => {
       return res.status(401).send(httpError403(`wrong Id, row lend doesn't exist, no delete`));
     }
   // return UserModel.addNotification(lend.idUserLender, newNotif); // add Item to user
-})
+  })
   .then((lend) => res.send({lend}))
   .catch (err => res.status(500).send(httpError500(null, err)));
 
 };
-lendRouter.delete('/:lend_id', cancelLendHandler);
+lendRouter.delete('/:lend_id', authMiddleware, cancelLendHandler);
 
 /*
 

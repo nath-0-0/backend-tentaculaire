@@ -54,7 +54,7 @@ database
 
     apiRouter.use('/', rootRouter);
 
-    // auth routes
+    // // auth routes
     apiRouter.use('/auth', authRouter);
     apiRouter.use('/item', itemRouter);
     apiRouter.use('/user', userRouter);

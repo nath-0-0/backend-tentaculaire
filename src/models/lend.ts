@@ -5,12 +5,9 @@ import {
     model as mongooseModel
   } from 'mongoose';
 
-  // utilisaer imgur pour stocker lîmage
-  
+
   // main interface
   export interface ILend {
-   // id_user: string;  // si l'utilisateur desactive son compte, on met ancien user>> je voudrais avoir accès au mail et/numéro tel
-   // TOASK
     item: {item_id: Schema.Types.ObjectId, name: string}; // pour l'historique, celui ci peut apparait donc encore si l'objet n'existe plus
     dateFrom: number; // TOASK
     dateTo: number;
@@ -19,17 +16,14 @@ import {
     isLate: boolean;
     accepted: {ask: boolean, message: string}; 
     returned: boolean;
-    idUserBorrower: Schema.Types.ObjectId; // TOASK peut être ajouter nom/prénom ainsi qu'info de contact
+    idUserBorrower: Schema.Types.ObjectId;
     idUserLender: Schema.Types.ObjectId;
-    // UserBorrower: {user_id: string, contact: string};
-    // UserLender: {user_id: string, contact: string};
     message: string; // message pouvant accompagner la demande de prêt
   }
 
   // document interface, define custom methods here
-
   export interface ILendDoc extends Document, ILend {
-    [x: string]: any; // TOASK pas compris
+   // [x: string]: any; // TOASK pas compris
     newLend: any;
   }
 
@@ -40,7 +34,7 @@ import {
   }
 
   // schema definition
-  
+
   export const lendSchema = new Schema<ILendDoc>({
     idUserBorrower: {
       type: Schema.Types.ObjectId,
@@ -52,9 +46,9 @@ import {
       required: true,
        ref: 'users',
     },
-    item: { // TOASK c'est just
+    item: {
       item_id: {  // ITEM
-        type: Schema.Types.ObjectId, 
+        type: Schema.Types.ObjectId,
         required: false,
         ref: 'users.items',
       },
@@ -69,8 +63,8 @@ import {
     },
     dateTo: {
       type: Number,
-      required: false, // date to plus grande que date from est-ce qu'on peut faire un validate à ce point ASK
-    },                // voir avec compare password TODO TOASK
+      required: false, // TODO ajouter validation dans schema dateTO plus grande que dateFrom dateFrom > aujourd'hui
+    },
     dateAsk: {
       type: Number,
       default: Date.now
@@ -114,5 +108,4 @@ import {
   lendSchema.index({ idUserLender: 1 });
 
 // model generation
-// TOASK pourquoi exporter et des fois non?
   export const LendModel = mongooseModel<ILendDoc, ILendModel>('lends', lendSchema);

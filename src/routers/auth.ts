@@ -6,11 +6,13 @@ import {
   httpError401,
   mongoError
 } from '../helpers/http';
+import { authMiddleware } from '../middlewares/auth';
 
 export const authRouter = express.Router();
 
 const signinHandler = (req: Request, res: Response) => {
   const { email, password } = req.body;
+  
   // 1. Validate missing data
   if (!email || !password)
     return res.status(401).send(httpError401('Email or password are missing'));
@@ -69,7 +71,20 @@ const signupHandler = (req: Request, res: Response) => {
 };
 authRouter.post('/signup', signupHandler);
 
+// const whoIAmHandler = (req: Request & { tokenContent?: any }, res: Response) => {
+//   console.log('token exist...');
+//   // 1. get user from token
+//   const user = req.tokenContent.user;
+//   // 2.
+//   res.status(400).send({ user });
+// };
 
+authRouter.get('/whoiam', [authMiddleware], (req: Request & { tokenContent?: any }, res: Response) => {
+  console.log('token exist...');
+  // 1. get user from token
+  const {user = null} = req.tokenContent || {};
+  res.status(400).send({ user });
+});
 
 
 // https://www.freecodecamp.org/news/how-to-make-input-validation-simple-and-clean-in-your-express-js-app-ea9b5ff5a8a7/

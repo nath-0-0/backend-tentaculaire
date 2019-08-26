@@ -1,7 +1,12 @@
+// TODO CHECK USER  CHECK AND REPLACE ERROR   si on veut mettre unobjet en pret coor doit etre resneigné
+import {
+  Schema,
+  model as mongooseModel
+} from 'mongoose';
 import * as express from 'express';
 import { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth';
-import { httpError500, httpError400, httpError401 } from '../helpers/http';
+import { httpError500, httpError400, httpError401, mongoError} from '../helpers/http';
 import { UserModel } from '../models/user';
 import { LendModel } from '../models/lend';
 import { ItemModel } from '../models/item';
@@ -17,69 +22,39 @@ userRouter.get('/', userHandler);
 
 
 // routes -------------------------------------------------------------------------
-// add a item to a user------------------------------------
-const addItemHandler = (req: Request, res: Response) => {
+
+// retourne un utilisateur------------------------------------
+const getUserHandler = (req: Request, res: Response) => {
   const user_id = Types.ObjectId(req.params.user_id);
-  const newItem = req.body;
-
-    UserModel.findById(user_id) // validate user id
-    .then(user => {
-      if (!user) {
-        res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
-        return;
-      }
-      return UserModel.addItem(user_id, newItem); // add Item to user
-      })
-    .then((user) => res.send({user}))
-    .catch (err => res.status(500).send(httpError500(null, err)));
-
-};
-userRouter.post('/:user_id/addItem', addItemHandler);
-
-// remove a item from a user------------------------------------
-const removeItemHandler = (req: Request, res: Response) => {
-  const user_id = Types.ObjectId(req.params.user_id);
-  const item_id = Types.ObjectId(req.params.item_id);
-
-  if (!user_id || !item_id) {
-    return res.status(401).send(httpError400('User Id or Item id is missing'));
-  }
-
-  ItemModel.findById(item_id) // validate item id   SK faut faire toutes ceds validation???????? on peut pas faire un truc plus generique
-    .then(item => {
-      if (!item) {
-        res.status(401).send(httpError401(`Wrong Id, item doesn't exist`));
-        return;
-      }
-    return UserModel.findByIdAndUpdate(
-      user_id,
-      { $pull: {  items: { _id: item_id } } },
-      { new: true, runValidators: true, strict: true }
-    )
-    .then((user) => {
-      if (!user) {
-        res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
-        return;
-      }
-      res.send({user});
-    })
-    .catch (err => res.status(500).send(httpError500(null, err)));
-  });
-};
-userRouter.delete('/:user_id/:item_id', removeItemHandler);
-
-
-// liste les items de l'utilisateurs------------------------------------
-const ItemsHandler = (req: Request, res: Response) => {
-  const user_id = Types.ObjectId(req.params.user_id);
-
-  if (!user_id) {
-    return res.status(401).send(httpError400('User Id is missing'));
-  }
-
+ console.log('user_id',user_id);
   UserModel.findById(
     user_id,
-    {items: 1 ,_id:0}
+  )
+  .then((user) => {
+    if (!user) {
+      res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
+      return;
+    }
+      res.send(user);
+  })
+  .catch (err => res.status(500).send(httpError500(null, err)));
+};
+userRouter.get('/edit/:user_id', getUserHandler); // TODO sans le chemin edit a améliorer
+
+// update a user------------------------------------ 
+const updateUserHandler = (req: Request, res: Response) => {
+  const user_id = Types.ObjectId(req.params.user_id);
+  const partialUser = req.body;
+
+  // hash password if changed
+  if (req.body.password){
+    partialUser.password = UserModel.hashPassword(req.body.password);
+  };
+
+  UserModel.findByIdAndUpdate(
+    user_id,
+    { $set: partialUser},
+    { new: true, runValidators: true, strict: true }
   )
   .then((user) => {
     if (!user) {
@@ -89,24 +64,95 @@ const ItemsHandler = (req: Request, res: Response) => {
     res.send({user});
   })
   .catch (err => res.status(500).send(httpError500(null, err)));
+
 };
-userRouter.get('/:user_id/listItem', ItemsHandler);
+userRouter.put('/update/:user_id', updateUserHandler);
 
+// ***********************************************************************
+// ITEMS
+// ***********************************************************************
 
-// update a user------------------------------------ TODO
-const updateUserHandler = (req: Request, res: Response) => {
+// add a item to a user------------------------------------ INSERT ITEM
+const addItemHandler = (req: Request, res: Response) => {
+  const user_id = (req.params.user_id);
+  const newItem = req.body;
+
+    UserModel.findById(user_id) // validate user id
+    .then(user => {
+      if (!user) {
+        res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
+        return;
+      }
+      if (!user.homeLocation){
+        return mongoError('Veuillez renseigner votre adresse pour insérer un objet', null);
+      }
+      return UserModel.addItem(user_id, newItem); // add Item to user
+      })
+    .then((user) => res.send({user}))
+    .catch (err => res.status(500).send(httpError500(err, err)));
+
+};
+userRouter.post('/:user_id/addItem', authMiddleware, addItemHandler);
+
+// remove a item from a user------------------------------------ // DELETE
+const removeItemHandler = async (req: Request, res: Response) => {
   const user_id = Types.ObjectId(req.params.user_id);
-  const partialUser = req.body;
+  const item_id = Types.ObjectId(req.params.item_id);
 
-  UserModel.findByIdAndUpdate(
+
+  await UserModel.findOne({ _id: user_id , 'items._id': item_id })
+  .then (useritem => {
+    if (!useritem) {
+      res.status(401).send(httpError401(`Wrong Id, item doesn't exist`));
+      return;
+    }
+  });
+  await UserModel.findOne({ _id : user_id})
+  .then(user => {
+    if (!user) {
+      res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
+      return;
+    }
+  });
+
+    UserModel.findByIdAndUpdate(
+      user_id,
+      { $pull: {  items: { _id: item_id } } },
+      { new: true, runValidators: true, strict: true }
+    )
+    .then((user) => {
+      if (!user) {
+        res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
+        return;
+      }
+      res.send(user);
+    })
+    .catch (err => res.status(500).send(httpError500(null, err)));
+
+};
+userRouter.delete('/:user_id/:item_id', authMiddleware,removeItemHandler);
+
+// liste les items de l'utilisateurs------------------------------------
+const ItemsHandler = (req: Request, res: Response) => {
+  const user_id = Types.ObjectId(req.params.user_id);
+
+
+  UserModel.findById(
     user_id,
-    { $set: partialUser},
-    { new: true, runValidators: true, strict: true }
+    {items: 1 , _id: 0}
   )
-  .then((user) => res.send({user}))
+  .then((user) => {
+    if (!user) {
+      res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
+      return;
+    }
+     res.send(user.items);
+  })
   .catch (err => res.status(500).send(httpError500(null, err)));
 };
-userRouter.put('/:user_id', updateUserHandler);
+userRouter.get('/:user_id/listItem', authMiddleware, ItemsHandler);
+
+
 
 // add a favortie to the user------------------------------------ TODO validate
 const addToFavoriteUserHandler = (req: Request, res: Response) => {
@@ -122,10 +168,16 @@ const addToFavoriteUserHandler = (req: Request, res: Response) => {
     { $push: { favorite: item_id} },
     { new: true, runValidators: true, strict: true }
   )
-  .then((favorite) => res.send({favorite}))
+  .then((user) => {
+    if (!user) {
+      res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
+      return;
+    }
+    res.send(user);
+  })
   .catch (err => res.status(500).send(httpError500(null, err)));
 };
-userRouter.post('/:user_id/:item_id/addToFavorite', addToFavoriteUserHandler);
+userRouter.post('/:user_id/:item_id/addToFavorite',authMiddleware,  addToFavoriteUserHandler);
 
 // remove a favorite from a user------------------------------------
 const removeFromFavoriteUserHandler = (req: Request, res: Response) => {
@@ -137,10 +189,16 @@ const removeFromFavoriteUserHandler = (req: Request, res: Response) => {
     { $pull: { favorite: item_id} },
     { new: true, runValidators: true, strict: true }
   )
-  .then((user) => res.send({user}))  
+  .then((user) => {
+    if (!user) {
+      res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
+      return;
+    }
+    res.send({user});
+  })
   .catch (err => res.status(500).send(httpError500(null, err)));
 };
-userRouter.delete('/:user_id/:item_id/removeFromFavorite', removeFromFavoriteUserHandler);
+userRouter.delete('/:user_id/:item_id/removeFromFavorite', authMiddleware, removeFromFavoriteUserHandler);
 
 // liste les emprunts de l'utilisateurs------------------------------------   TODO
 const BorrowItemsHandler = (req: Request, res: Response) => {
@@ -150,7 +208,7 @@ const BorrowItemsHandler = (req: Request, res: Response) => {
     user_id,
     {items: 1 }
   )
-  .then((items) => res.send({items}))
+  .then((items) => res.send(items))
   .catch (err => res.status(500).send(httpError500(null, err)));
 };
 userRouter.get('/:user_id/listItemBorrowed', BorrowItemsHandler);
@@ -174,7 +232,6 @@ const stages = [{$lookup:
 
 ];
 
-console.log('coucou');
 LendModel.aggregate(stages)
            .exec()
            .then((item) => {
@@ -187,15 +244,9 @@ LendModel.aggregate(stages)
 };
 userRouter.get('/:user_id/listItemLent', LendItemsHandler);
 
-
-/*
-db.user.findByIdAndUpdate(
-  '5d40ab91168aca30a689c527', // ObjectId(user_id)
-       {  $push: { 'favorite': '5d4017129571a71fda1bb6e9' } },
-     { new: true, runValidators: true, strict: true }
-
-
-     */
+// TODO liste notificatins listre favoris
+// TODO TOASK si utilisateur sort un objet, faut il que je l'efface dans tous les favoris!
+// on peut mettre message erreur
 
 
 

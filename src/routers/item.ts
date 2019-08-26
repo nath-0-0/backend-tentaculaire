@@ -26,7 +26,7 @@ const searchItemHandler = (req: Request, res: Response) => {
 
 
     UserModel.findByCoordinates([lat, long], distance, txt)
-    .then((items) => res.send({items}))
+    .then((items) => res.send(items))
     .catch (err => res.status(500).send(httpError500(null, err)));
   };
 itemRouter.get('/search/:q/:d/:lat/:long', searchItemHandler); // mot / distance/ latitude / longitude
@@ -60,36 +60,26 @@ const getItemByIdHandler = (req: Request, res: Response) => {
   UserModel.aggregate(stages)
            .exec()
            .then((item) => {
-             if (!item) {
+             if (item.length === 0) {
               return res.status(401).send(httpError403(`wrong Id, item doesn't exist`));
             }
-             res.send({item});
+            console.log(item[0]);
+             res.send(item[0]);
             })
            .catch (err => res.status(500).send(httpError500(null, err)));
 
-  // TOASK
-  //{
-    // "item": [
-    //   {
-    // "enabled": true,
-    // "_id": "5d49af160f14d50dcbc793cd",
-    // "name": "chat",
-    // "deposit": 30
-    // }
-    // ],
-    // }
+
 
 };
-itemRouter.get('/:item_id', getItemByIdHandler);
+itemRouter.get('/edit/:item_id', getItemByIdHandler);
 
 // update un item ------------------------------------------------------------------------
 const updateItemHandler = (req: Request, res: Response) => {
   const item_id = (req.params.item_id);  //  pourquoi erreur???? je n'arrive pas en mettant eun  Types.Object TOASK
   const user_id = (req.params.user_id);
   const partialItem = req.body;
-  console.log(partialItem);
 
-  UserModel.updateOne( // TOASK  peux mieux faire?
+  UserModel.updateOne( // TOASK  peux mieux faire? DEvrait mieux faire
     { _id: user_id , 'items._id': item_id },
         { $set: { 'items.$.name': partialItem.name,
                   'items.$.description': partialItem.description,
@@ -106,11 +96,12 @@ const updateItemHandler = (req: Request, res: Response) => {
     if (!item) {
       return res.status(401).send(httpError403(`wrong Id, item lend doesn't exist`));
     }
-    res.send({item});
+    console.log();
+    res.send(req.body);
   })
   .catch (err => res.status(500).send(httpError500(null, err)));
 
 };
-itemRouter.post('/:user_id/:item_id', updateItemHandler);
+itemRouter.put('/:user_id/:item_id', authMiddleware, updateItemHandler);
 
 

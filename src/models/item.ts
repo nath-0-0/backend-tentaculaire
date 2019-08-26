@@ -6,9 +6,6 @@ import {
   } from 'mongoose';
 import { urlValidator } from '../validators';
 
-  // utilisaer imgur pour stocker lîmage
-  // fork sur github pour reprendre un projet
-
 
   // main interface
   export interface IItem {
@@ -20,7 +17,6 @@ import { urlValidator } from '../validators';
   }
 
   // document interface, define custom methods here
-  // export interface IUserDoc extends Document, IUser {
   export interface IItemDoc extends Document, IItem {
 
   }
@@ -56,9 +52,9 @@ import { urlValidator } from '../validators';
       default: true
     },
     image: {
-      type: String,
+      type: Buffer,
       required: false,
-      validate: [urlValidator, 'Image must an uri']
+      // validate: [urlValidator, 'Image must an uri']
     },
   });
 
