@@ -1,20 +1,48 @@
 import { Request, Response } from 'express';
 import * as  jwt from 'jsonwebtoken';
 
-export const authMiddleware = (req: Request & { tokenContent?: any }, res: Response, next) => {
+export interface AuthenticatedRequest extends Request {
+  tokenContent?: { user: any };
+}
+
+export const authMiddleware = (req: AuthenticatedRequest, res: Response, next) => {
   const token = req.header('Authorization');
 
-  console.log('authMiddleware');
   try {
-    const tokenContent = jwt.verify(token, process.env.JWT_SECRET);
-    req.tokenContent = tokenContent;
-    // token valid & not expired
-    next(); // TOASK the next
+
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+
+    
+    const content: any = jwt.verify(token, process.env.JWT_SECRET);
+    req.tokenContent = content;
+    // token is valid & not expired, let's update token expiry so user will
+    // not be disconnected during application use :
+    //
+    // 1. Save original json method
+    const originalJson = res.json;
+    // 2. replace it with new one
+    res.json = (body?: any): Response => {
+      // 3. Don't update token for:
+      // - Failed requests
+      // - Request without token
+      // - Responses without body
+      // - Auth routes
+      if (res.statusCode === 200 && body && token && typeof body === 'object') {
+        // 4. generate new token with same payload from current token
+        const newToken = jwt.sign(jwt.decode(token), process.env.JWT_SECRET);
+  //      const newToken = jwt.sign(jwt.decode(token), process.env.JWT_SECRET, { expiresIn:  process.env.JWT_EXPIRE});
+        // 5. add it to response so frontend can update it
+        body.token = newToken;
+      }
+      // 6. Call origin json method
+      return originalJson.call(res, body);
+    };
+    next();
   }
   catch (e) {
     // token invalid
-    console.log('error token: ', e);
-    
+    console.log('saleté de token');
     res.status(401).send({ error: 401 });
   }
 };

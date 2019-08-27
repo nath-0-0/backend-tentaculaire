@@ -26,7 +26,7 @@ userRouter.get('/', userHandler);
 // retourne un utilisateur------------------------------------
 const getUserHandler = (req: Request, res: Response) => {
   const user_id = Types.ObjectId(req.params.user_id);
- console.log('user_id',user_id);
+ console.log('user_id', user_id);
   UserModel.findById(
     user_id,
   )
@@ -41,15 +41,17 @@ const getUserHandler = (req: Request, res: Response) => {
 };
 userRouter.get('/edit/:user_id', getUserHandler); // TODO sans le chemin edit a améliorer
 
-// update a user------------------------------------ 
+// update a user------------------------------------
 const updateUserHandler = (req: Request, res: Response) => {
   const user_id = Types.ObjectId(req.params.user_id);
   const partialUser = req.body;
 
   // hash password if changed
-  if (req.body.password){
+  if (req.body.password) {
     partialUser.password = UserModel.hashPassword(req.body.password);
-  };
+  }
+
+
 
   UserModel.findByIdAndUpdate(
     user_id,
@@ -63,7 +65,7 @@ const updateUserHandler = (req: Request, res: Response) => {
     }
     res.send({user});
   })
-  .catch (err => res.status(500).send(httpError500(null, err)));
+  .catch (err => res.status(500).send(httpError500(null, '' + err)));
 
 };
 userRouter.put('/update/:user_id', updateUserHandler);
@@ -83,7 +85,7 @@ const addItemHandler = (req: Request, res: Response) => {
         res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
         return;
       }
-      if (!user.homeLocation){
+      if (!user.homeLocation) {
         return mongoError('Veuillez renseigner votre adresse pour insérer un objet', null);
       }
       return UserModel.addItem(user_id, newItem); // add Item to user
@@ -130,7 +132,7 @@ const removeItemHandler = async (req: Request, res: Response) => {
     .catch (err => res.status(500).send(httpError500(null, err)));
 
 };
-userRouter.delete('/:user_id/:item_id', authMiddleware,removeItemHandler);
+userRouter.delete('/:user_id/:item_id', authMiddleware, removeItemHandler);
 
 // liste les items de l'utilisateurs------------------------------------
 const ItemsHandler = (req: Request, res: Response) => {
@@ -177,7 +179,7 @@ const addToFavoriteUserHandler = (req: Request, res: Response) => {
   })
   .catch (err => res.status(500).send(httpError500(null, err)));
 };
-userRouter.post('/:user_id/:item_id/addToFavorite',authMiddleware,  addToFavoriteUserHandler);
+userRouter.post('/:user_id/:item_id/addToFavorite', authMiddleware,  addToFavoriteUserHandler);
 
 // remove a favorite from a user------------------------------------
 const removeFromFavoriteUserHandler = (req: Request, res: Response) => {

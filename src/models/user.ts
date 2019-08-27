@@ -196,19 +196,19 @@ userSchema.method('comparePassword', function (this: IUserDoc, password: string)
 
 
 userSchema.method('getToken', function (this: IUserDoc) {
-  return jwt.sign({
-      user: this.toJSON()
-    },
+  const user = this.toObject();
+  delete user.password;
+  return jwt.sign({ user },
     process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE
+   // expiresIn: process.env.JWT_EXPIRE
   });
 });
 
 // override toJSON to remove password before sending response
 userSchema.method('toJSON', function (this: IUserDoc) {
-  const obj = this.toObject();
-  delete obj.password;
-  return obj;
+  const user = this.toObject();
+  delete user.password;
+  return user;
 });
 
 userSchema.method('addFavorite', function (this: IUserDoc, idItem: string) {
