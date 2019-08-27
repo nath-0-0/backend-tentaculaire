@@ -9,11 +9,14 @@ import { authMiddleware } from '../middlewares/auth';
 import { httpError500, httpError400, httpError401, mongoError} from '../helpers/http';
 import { UserModel } from '../models/user';
 import { LendModel } from '../models/lend';
-import { ItemModel } from '../models/item';
 import { Types } from 'mongoose';
-import { urlValidator } from '../validators';
 
 export const userRouter = express.Router();
+
+// const  corsOptions = {
+//   origin: 'http://example.com',
+//   optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+// };
 
 const userHandler = (req: Request, res: Response) => {
   res.send({ message: 'Welcome to my APIIII user tenta' });
@@ -50,8 +53,6 @@ const updateUserHandler = (req: Request, res: Response) => {
   if (req.body.password) {
     partialUser.password = UserModel.hashPassword(req.body.password);
   }
-
-
 
   UserModel.findByIdAndUpdate(
     user_id,

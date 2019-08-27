@@ -6,14 +6,9 @@ import {
   model as mongooseModel
 } from 'mongoose';
 
-
-
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
-import { urlValidator } from '../validators';
 import { IItem, itemSchema } from './item';
-//TODO faire sans schema et toutotoutoutout
-
 
 
 // main interface
@@ -182,7 +177,6 @@ userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ pseudo: 1 }, { unique: true });
 
 // methode
-
 userSchema.method('comparePassword', function (this: IUserDoc, password: string) {
   try {
     return bcrypt.compareSync(password, this.password);
@@ -192,15 +186,12 @@ userSchema.method('comparePassword', function (this: IUserDoc, password: string)
 });
 
 
-
-
-
 userSchema.method('getToken', function (this: IUserDoc) {
   const user = this.toObject();
   delete user.password;
   return jwt.sign({ user },
     process.env.JWT_SECRET, {
-   // expiresIn: process.env.JWT_EXPIRE
+   // expiresIn: process.env.JWT_EXPIRE  //TOASK TODO cela ne fonctionne pas avec
   });
 });
 

@@ -10,10 +10,10 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next) =
 
   try {
 
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    // res.header('Access-Control-Allow-Origin', '*');
+    // res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
 
-    
+
     const content: any = jwt.verify(token, process.env.JWT_SECRET);
     req.tokenContent = content;
     // token is valid & not expired, let's update token expiry so user will

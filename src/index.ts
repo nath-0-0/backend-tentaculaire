@@ -33,7 +33,8 @@ database
 
     // MIDDLEWARES
     // use bodyParser to parse json
-    app.use(bodyParser.json())
+    //app.use(bodyParser.json())
+    app.use(bodyParser.json({ limit: '40MB' }))
       // use Helmet to help secure Express apps with various HTTP headers
       .use(helmet())
       // use morgan to log requests to the console
@@ -41,9 +42,13 @@ database
       // use HPP to protect against HTTP Parameter Pollution attacks
       .use(hpp())
       // enable gzip compression
-      .use(compress())
-      // cors domaine origin
-      .use(cors({ optionsSuccessStatus: 200 }))
+      //.use(compress())
+      // cors domaine originZ
+      .use(cors({ origin: 'http://localhost:8100',optionsSuccessStatus: 200 }))
+      // .use(cors({ 
+      //   optionsSuccessStatus: 200,
+      //   origin: (ori, cb) => { cb(null, true) }
+      //   }))
       // parse cookies
       .use(cookieParser());
 
