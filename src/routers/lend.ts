@@ -132,6 +132,43 @@ const getLendHandler = (req: Request, res: Response, ) => {
 lendRouter.get('/:lend_id', authMiddleware, getLendHandler); // TODO add validate for item_id
 
 
+const getLendInProgressHandler = (req: Request, res: Response, ) => {
+  const lend_id = req.params.user_id;
+  console.log(lend_id);
+  const stages = [
+    { $match : { returned : false } },
+    {$lookup:
+      {from: 'users',
+      localField: 'idUserBorrower',
+      foreignField: '_id',
+      as: 'userB',
+     },
+    },
+    {$lookup:
+      {from: 'users',
+      localField: 'idUserLender',
+      foreignField: '_id',
+      as: 'userL',
+     },
+    },
+    // },
+    {$project: {
+      _id: 1, dateFrom: 1, dateTo: 1, dateAsk: 1, message: 1, accepted: 1, returned: 1, item: 1,
+      userB: { _id: 1, pseudo: 1, avatar: 1,email: 1,tel: 1,firstname: 1, lastname:1},
+    }}
+  ];
+
+  LendModel.aggregate(stages)
+            .exec()
+            .then((lend) => {
+              console.log(lend);
+              res.send(lend);
+              })
+            .catch (err => res.status(500).send(httpError500(null, '' + err)));
+
+
+};
+lendRouter.get('/in_progress/:user_id', authMiddleware, getLendInProgressHandler); // TODO add validate for item_id
 
 
 // answer yes or no to lend the item ------------------------------------------------
