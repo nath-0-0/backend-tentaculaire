@@ -112,7 +112,7 @@ export const userSchema = new Schema<IUserDoc>({
   avatar: {
     type: String,
     required: false,
-    default: 'https://www.gravatar.com/avatar/default',
+    default: 'https://i.imgur.com/9HJtn5y.png',
     //validate: [urlValidator, 'Avatar must an uri']
   },
   pseudo: {
@@ -165,7 +165,7 @@ export const userSchema = new Schema<IUserDoc>({
       title: {type: String, require: false, minLength: 2, maxLength: 100},
       date: {type: Number, require: true, default : Date.now},
       text: {type: String, require: false, minLength: 5, maxLength: 200},
-      contactNotif : {type: String, require: false, minLength: 5, maxLength: 500}
+      contactNotif : {type: String, require: false, minLength: 5, maxLength: 500} // TODO V2
     },
     default : [],
   }

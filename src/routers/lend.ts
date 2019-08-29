@@ -4,8 +4,6 @@ import { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth';
 import {
   Schema,
-  Model,
-  Document,
   model as mongooseModel
 } from 'mongoose';
 
@@ -33,7 +31,7 @@ lendRouter.get('/', userHandler);
 
 // ask for borrow a item  ------------------------------------------------
 const askLendHandler = async (req: Request, res: Response) => {
-   const borrower_id = req.params.borrower_id;
+  const borrower_id = req.params.borrower_id;
   // const borrower_id = Types.ObjectId(req.params.borrower_id);
   const lender_id = req.params.lender_id;
   // const lender_id = Types.ObjectId(req.params.lender_id);
@@ -82,11 +80,13 @@ const askLendHandler = async (req: Request, res: Response) => {
         const newNotif = new Object(
           {
             lend_id: lend._id,
+            item_id: item_id,
             title: 'Une demande de prêt',
             date: Date.now,
-            text: 'string',
+            text: 'Veuillez voir vos demandes en cours',
           }
         );
+        console.log(newNotif);
          return UserModel.addNotification(lender_id, newNotif); // add Item to user
         })
     .then((lend) => res.send({lend}))
@@ -94,39 +94,83 @@ const askLendHandler = async (req: Request, res: Response) => {
 };
 lendRouter.post('/:borrower_id/:lender_id/:item_id', authMiddleware, askLendHandler); // TODO add validate for item_id
 
+const getLendHandler = (req: Request, res: Response, ) => {
+  const lend_id = req.params.lend_id;
+  console.log(lend_id);
+  const stages = [
+    { $match : { _id : Types.ObjectId(lend_id) } },
+    {$lookup:
+      {from: 'users',
+      localField: 'idUserBorrower',
+      foreignField: '_id',
+      as: 'userB',
+     },
+    },
+    // {$lookup:
+    //   {from: 'users',
+    //   localField: 'idUserLender',
+    //   foreignField: '_id',
+    //   as: 'userL',
+    //  },
+    // },
+    {$project: {
+      _id: 1, dateFrom: 1, dateTo: 1, dateAsk: 1, message: 1, accepted: 1, returned: 1, item: 1,
+      userB: { _id: 1, pseudo: 1, avatar: 1,email: 1,tel: 1,firstname: 1, lastname:1},
+    }}
+  ];
+
+  LendModel.aggregate(stages)
+            .exec()
+            .then((lend) => {
+              console.log(lend);
+              res.send(lend[0]);
+              })
+            .catch (err => res.status(500).send(httpError500(null, '' + err)));
+
+
+};
+lendRouter.get('/:lend_id', authMiddleware, getLendHandler); // TODO add validate for item_id
+
+
+
+
 // answer yes or no to lend the item ------------------------------------------------
 // REMARQUE l'objet n'est pas unvailable lorsqu il est en prêt car peut etre dispo à autre date
 // TODO check au moment de la demande et selon les dates VERSION 2
 const answerLendHandler = (req: Request, res: Response, ) => {
-  const lend_id = new Schema.Types.ObjectId(req.params.lend_id);
+  console.log('coucou');
+  const lend_id = req.params.lend_id;
+ 
   const partialLend = req.body; // modification objet accepted.ask /accepted.message
+  console.log(partialLend);
+//Types.ObjectId(lend_id)
 
-
-  const newNotif = new Object(
-    {
-      lend_id: lend_id,
-      title: partialLend.accepted.ask ? 'Votre demande d\' emprunt a été acceptée' : 'Votre demande d\'emprunt a étét refusée',
-      date: Date.now,
-      text: partialLend.accepted.message
-    }
-  );
-
-  LendModel.findByIdAndUpdate(
-    lend_id,
-    { $set: partialLend},
+   LendModel.findByIdAndUpdate(
+    Types.ObjectId(lend_id),
+    { $set: { "accepted.ask": partialLend.answer }},
     { new: true, runValidators: true, strict: true }
   )
   .then((lend) => {
     if (!lend) {
       return res.status(401).send(httpError403(`wrong Id, item lend doesn't exist`));
     }
+    const newNotif = new Object(
+      {
+        lend_id: lend_id,
+        item_id : lend.item.item_id,
+        title: partialLend.answer ? 'Votre demande d\' emprunt a été acceptée' : 'Votre demande d\'emprunt a étét refusée',
+        date: Date.now,
+        text:  "Veuillez prendre contact avec le prêteur, cliquez sur son icône pour avoir ses informations"  // "TODO V2" autre message si refusé
+      }
+    );
+    console.log(newNotif);
      return UserModel.addNotification(lend.idUserLender, newNotif); // add Item to user
   })
-  .then((lend) => res.send({lend}))
+  .then((newNotif) => res.send(newNotif))
   .catch (err => res.status(500).send(httpError500(null, err)));
 
 };
-lendRouter.post('/:lend_id/ask', authMiddleware, answerLendHandler);
+lendRouter.post('/ask/:lend_id', authMiddleware, answerLendHandler);
 
 
 // make the lend as returned ------------------------------------------------
@@ -191,7 +235,7 @@ const cancelLendHandler = (req: Request, res: Response) => {
       lend_id: lend_id,
       title: 'La demande de prêt a été annulée',
       date: Date.now,
-      text: 'string',
+      text: '',
     }
   );
 

@@ -1,10 +1,9 @@
 import * as express from 'express';
 import { Request, Response } from 'express';
 import { authMiddleware } from '../middlewares/auth';
-import { UserModel, IUserDoc, IUser } from '../models/user';
-import { httpError500, httpError400, httpError401, httpError403 } from '../helpers/http';
+import { UserModel} from '../models/user';
+import { httpError500, httpError403 } from '../helpers/http';
 import { Types } from 'mongoose';
-import { SlowBuffer } from 'buffer';
 
 export const itemRouter = express.Router();
 

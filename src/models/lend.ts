@@ -9,9 +9,9 @@ import {
   // main interface
   export interface ILend {
     item: {item_id: Schema.Types.ObjectId, name: string}; // pour l'historique, celui ci peut apparait donc encore si l'objet n'existe plus
-    dateFrom: number; // TOASK
-    dateTo: number;
-    dateAsk: number;
+    dateFrom: Date; 
+    dateTo: Date;
+    dateAsk: Date;
     isDamaged: boolean;
     isLate: boolean;
     accepted: {ask: boolean, message: string}; 
@@ -23,19 +23,15 @@ import {
 
   // document interface, define custom methods here
   export interface ILendDoc extends Document, ILend {
-   // [x: string]: any; // TOASK pas compris
-    newLend: any;
+      newLend: any;
   }
 
   // model interface, define custom static methods here
   interface ILendModel extends Model<ILendDoc> {
-    // insertOne(arg0: { newLend: ILendDoc; });
-    // insert: any;
   }
 
   // schema definition
-
-  export const lendSchema = new Schema<ILendDoc>({
+export const lendSchema = new Schema<ILendDoc>({
     idUserBorrower: {
       type: Schema.Types.ObjectId,
       required: true,
@@ -58,15 +54,15 @@ import {
         }
     },
     dateFrom: {
-      type: Number,
+      type: Date,
       required: false,
     },
     dateTo: {
-      type: Number,
-      required: false, // TODO ajouter validation dans schema dateTO plus grande que dateFrom dateFrom > aujourd'hui
+      type: Date,
+      required: false, 
     },
     dateAsk: {
-      type: Number,
+      type: Date,
       default: Date.now
     },
     isLate: {

@@ -4,7 +4,6 @@ import {
     Document,
     model as mongooseModel
   } from 'mongoose';
-import { urlValidator } from '../validators';
 
 
   // main interface
@@ -46,14 +45,15 @@ import { urlValidator } from '../validators';
       min: [0,'Minimum is 0'],
       max: [500,'Maximum is 500'],
     },
-    enabled: {  // false si l'utilisateur le met en pause ou si il est en prêt.
+    enabled: {  // false si l'utilisateur le met en pause 
       type: Boolean,
       required: true,
       default: true
     },
     image: {
-      type: Buffer,
-      required: false,
+      type: String,
+      default:'https://imgur.com/YKPFuaf',
+      //required: false,
       // validate: [urlValidator, 'Image must an uri']
     },
   });

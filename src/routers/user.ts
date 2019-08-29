@@ -25,6 +25,9 @@ userRouter.get('/', userHandler);
 
 
 // routes -------------------------------------------------------------------------
+// ***********************************************************************
+//    U  S  E  R  S
+// ***********************************************************************
 
 // retourne un utilisateur------------------------------------
 const getUserHandler = (req: Request, res: Response) => {
@@ -72,7 +75,7 @@ const updateUserHandler = (req: Request, res: Response) => {
 userRouter.put('/update/:user_id', updateUserHandler);
 
 // ***********************************************************************
-// ITEMS
+//    I  T  E  M  S
 // ***********************************************************************
 
 // add a item to a user------------------------------------ INSERT ITEM
@@ -128,7 +131,7 @@ const removeItemHandler = async (req: Request, res: Response) => {
         res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
         return;
       }
-      res.send(user);
+      res.send({_id: item_id});
     })
     .catch (err => res.status(500).send(httpError500(null, err)));
 
@@ -155,7 +158,72 @@ const ItemsHandler = (req: Request, res: Response) => {
 };
 userRouter.get('/:user_id/listItem', authMiddleware, ItemsHandler);
 
+// ***********************************************************************
+// N O T I F I C A T I O N S 
+// ***********************************************************************
 
+// liste les notifications de l'utilisateurs------------------------------------
+const NotificationsHandler = (req: Request, res: Response) => {
+  const user_id = Types.ObjectId(req.params.user_id);
+
+
+  UserModel.findById(
+    user_id,
+    {notifications: 1 , _id: 0}
+  )
+  .then((user) => {
+    if (!user) {
+      res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
+      return;
+    }
+     res.send(user.notifications);
+  })
+  .catch (err => res.status(500).send(httpError500(null, err)));
+};
+userRouter.get('/:user_id/listNotifications', authMiddleware, NotificationsHandler);
+
+// remove a notifications from a user------------------------------------ // DELETE
+const removeNotifHandler = async (req: Request, res: Response) => {
+  const user_id = Types.ObjectId(req.params.user_id);
+  const notif_id = Types.ObjectId(req.params.notif_id);
+
+
+  await UserModel.findOne({ _id: user_id , 'notifs._id': notif_id })
+  .then (usernotif => {
+    if (!usernotif) {
+      res.status(401).send(httpError401(`Wrong Id, notif doesn't exist`));
+      return;
+    }
+  });
+  await UserModel.findOne({ _id : user_id})
+  .then(user => {
+    if (!user) {
+      res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
+      return;
+    }
+  });
+
+    UserModel.findByIdAndUpdate(
+      user_id,
+      { $pull: {  notifs: { _id: notif_id } } },
+      { new: true, runValidators: true, strict: true }
+    )
+    .then((user) => {
+      if (!user) {
+        res.status(401).send(httpError401(`Wrong Id, user doesn't exist`));
+        return;
+      }
+      res.send(user);
+    })
+    .catch (err => res.status(500).send(httpError500(null, err)));
+
+};
+userRouter.delete('/:user_id/:notif_id', authMiddleware, removeNotifHandler);
+
+
+// ***********************************************************************
+//  F  A  V  O  R  I  T  E  S
+// ***********************************************************************
 
 // add a favortie to the user------------------------------------ TODO validate
 const addToFavoriteUserHandler = (req: Request, res: Response) => {
@@ -203,6 +271,10 @@ const removeFromFavoriteUserHandler = (req: Request, res: Response) => {
 };
 userRouter.delete('/:user_id/:item_id/removeFromFavorite', authMiddleware, removeFromFavoriteUserHandler);
 
+// ***********************************************************************
+// E  M  P  R  U  N  T  S    && P  R E  T  S
+// ***********************************************************************
+
 // liste les emprunts de l'utilisateurs------------------------------------   TODO
 const BorrowItemsHandler = (req: Request, res: Response) => {
   const user_id = Types.ObjectId(req.params.user_id);
@@ -224,25 +296,22 @@ const LendItemsHandler = (req: Request, res: Response) => {
     return res.status(401).send(httpError400('User Id is missing'));
   }
 
-
 // https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/index.html#examples
 const stages = [{$lookup:
-  {from: 'users.items',
-  localField: '_id',
-  foreignField: 'item_id',
-  as: 'items'}},
-{ '$unwind': '$itemId' }
+    {from: 'users.items',
+    localField: '_id',
+    foreignField: 'item_id',
+    as: 'items'}},
+  { '$unwind': '$itemId' }
 
-];
+  ];
 
-LendModel.aggregate(stages)
-           .exec()
-           .then((item) => {
-             res.send({item});
-            })
-           .catch (err => res.status(500).send(httpError500(null, err)));
-
-
+  LendModel.aggregate(stages)
+            .exec()
+            .then((item) => {
+              res.send({item});
+              })
+            .catch (err => res.status(500).send(httpError500(null, err)));
 
 };
 userRouter.get('/:user_id/listItemLent', LendItemsHandler);

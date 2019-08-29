@@ -44,7 +44,8 @@ database
       // enable gzip compression
       //.use(compress())
       // cors domaine originZ
-      .use(cors({ origin: 'http://localhost:8100',optionsSuccessStatus: 200 }))
+      .use(cors({ origin: 'http://localhost:8100', optionsSuccessStatus: 200 }))
+     // .use(cors())
       // .use(cors({ 
       //   optionsSuccessStatus: 200,
       //   origin: (ori, cb) => { cb(null, true) }
