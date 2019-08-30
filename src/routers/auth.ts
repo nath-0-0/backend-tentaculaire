@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { UserModel } from '../models/user';
 import {
   httpError400,
+  httpError500,
   httpError401,
   mongoError
 } from '../helpers/http';
@@ -10,6 +11,8 @@ import { authMiddleware, AuthenticatedRequest } from '../middlewares/auth';
 
 export const authRouter = express.Router();
 
+
+  
 const signinHandler = (req: Request, res: Response) => {
   const { email, password } = req.body;
 
@@ -41,9 +44,9 @@ authRouter.post('/signin', signinHandler);
 
 const signupHandler = (req: Request, res: Response) => {
   // 1. Validate missing user data from req.body
-  const { email, password} = req.body;
-  if (!email || !password )
-    return res.status(400).send(httpError400('Email and password are required'));
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).send(httpError400('All fields are required'));
 
   // 2. Validate uniqueness of email
   UserModel
@@ -58,14 +61,13 @@ const signupHandler = (req: Request, res: Response) => {
       // 4. Hash password
       newUser.password = UserModel.hashPassword(password);
       // 5. Save and manage validation errors
-
-      return newUser.save();
-    })
-    .then(user => {
-      // 5. Generate user token
-      const token = user.getToken();
-      // 6. Return complete user object with token
-      res.send({ user, error: false, token });
+      return newUser.save()
+      .then(user => {
+        // 5. Generate user token
+        const token = user.getToken();
+        // 6. Return complete user object with token
+        res.send({ user, error: false, token });
+      });
     })
     .catch(err => mongoError(err, res));
 };

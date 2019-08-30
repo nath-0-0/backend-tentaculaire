@@ -117,7 +117,6 @@ export const userSchema = new Schema<IUserDoc>({
   },
   pseudo: {
     type: String,
-    required: false,
     minLength: 2,
     maxLength: 100,
   },
@@ -135,7 +134,7 @@ export const userSchema = new Schema<IUserDoc>({
     },
     coordinates: {
       type: [Number],
-      default: [0, 0]
+      default: [0,0]
     },
     require : false,
   },
@@ -151,7 +150,7 @@ export const userSchema = new Schema<IUserDoc>({
   },
   items: {
     type: [itemSchema],
-    require : true,
+    require : false,
     default : []
   },
   lastLogin: {
@@ -163,7 +162,7 @@ export const userSchema = new Schema<IUserDoc>({
     type : {
       lend_id : [String],
       title: {type: String, require: false, minLength: 2, maxLength: 100},
-      date: {type: Number, require: true, default : Date.now},
+      date: {type: Number, require: false, default : Date.now},
       text: {type: String, require: false, minLength: 5, maxLength: 200},
       contactNotif : {type: String, require: false, minLength: 5, maxLength: 500} // TODO V2
     },
@@ -174,7 +173,7 @@ export const userSchema = new Schema<IUserDoc>({
 // On crée l'index pour $geoNear
 userSchema.index({ 'homeLocation': '2dsphere' });
 userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ pseudo: 1 }, { unique: true });
+// userSchema.index({ pseudo: 1 }, { unique: true });
 
 // methode
 userSchema.method('comparePassword', function (this: IUserDoc, password: string) {

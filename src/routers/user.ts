@@ -69,7 +69,7 @@ const updateUserHandler = (req: Request, res: Response) => {
     }
     res.send({user});
   })
-  .catch (err => res.status(500).send(httpError500(null, '' + err)));
+ .catch (err => res.status(500).send(httpError500(null, '' + err)));
 
 };
 userRouter.put('/update/:user_id', updateUserHandler);
